@@ -1,0 +1,50 @@
+{
+  "name": "electron-file-viewer",
+  "version": "1.0.0",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "start": "npm run build && electron .",
+    "dev": "concurrently \"npm run build:watch\" \"npm run start:electron\"",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "start:electron": "electron .",
+    "package": "electron-builder",
+    "package:win": "electron-builder --win",
+    "package:mac": "electron-builder --mac",
+    "package:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "@types/electron-store": "^3.2.2",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "concurrently": "^8.0.0",
+    "electron": "^40.1.0",
+    "electron-builder": "^26.6.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "build": {
+    "appId": "com.example.fileviewer",
+    "productName": "File Viewer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "dist/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
