@@ -15,7 +15,7 @@ export default defineConfig({
       emptyOutDir: true,
       rollupOptions: {
         output: {
-          entryFileNames: 'index.mjs'
+          entryFileNames: 'index.js'
         }
       }
     },
@@ -26,12 +26,12 @@ export default defineConfig({
       outDir: 'dist/preload',
       lib: {
         entry: resolve(__dirname, 'src/main/preload.js'),
-        formats: ['es']
+        formats: ['cjs']
       },
       emptyOutDir: true,
       rollupOptions: {
         output: {
-          entryFileNames: 'index.mjs'
+          entryFileNames: 'index.js'
         }
       }
     },

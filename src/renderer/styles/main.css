@@ -110,8 +110,7 @@ body {
 /* Main Content Styles */
 .main-content {
   flex: 1;
-  /* background: #1e1e1e; */
-  background-color: red;
+  background: #1e1e1e;
   color: #cccccc;
   display: flex;
   flex-direction: column;
