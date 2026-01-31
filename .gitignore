@@ -4,6 +4,7 @@
 .yarn-integrity
 
 # Production build artifacts
+/release
 /build
 /dist
 /out
