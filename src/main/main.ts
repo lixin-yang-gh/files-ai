@@ -13,31 +13,47 @@ function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),          // ← changed from preload.mjs to preload.js
+      preload: path.join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      // sandbox: false,                                    // ← optional: uncomment only if needed for debugging
+      // sandbox: false,  // ← only enable temporarily if debugging CSP/sandbox issues
     },
     titleBarStyle: 'hiddenInset',
   });
 
   console.log(`env=${process.env.NODE_ENV}`);
-  console.log(`__dirname=${__dirname}`);
-  const indexPath = path.join(__dirname, '../renderer/index.html');
-  console.log(`Trying to load: ${indexPath}`);
 
-  if (fs.existsSync(indexPath)) {
-    mainWindow.loadFile(indexPath);
+  // ────────────────────────────────────────────────
+  // Conditional loading: dev server vs built file
+  // ────────────────────────────────────────────────
+  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+  if (isDev && process.env['ELECTRON_RENDERER_URL']) {
+    // Development: load from Vite dev server (electron-vite sets this env var)
+    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    console.error('index.html not found at:', indexPath);
-    mainWindow.loadURL(
-      'data:text/html,<h1 style="color:red">index.html not found!<br>Run: npm run build</h1>'
-    );
+    // Production / packaged: load built index.html
+    const indexPath = path.join(__dirname, '../renderer/index.html');
+    console.log(`Trying to load: ${indexPath}`);
+    if (fs.existsSync(indexPath)) {
+      mainWindow.loadFile(indexPath);
+    } else {
+      console.error('index.html not found at:', indexPath);
+      console.log('Current __dirname:', __dirname);
+      try {
+        console.log('Files in dist/renderer:', fs.readdirSync(path.join(__dirname, '../renderer')));
+      } catch (e) {
+        console.error('Cannot read dist/renderer:', e);
+      }
+      mainWindow.loadURL(
+        'data:text/html,<h1 style="color:red">index.html not found!<br>Run: npm run build<br>Check console for details</h1>'
+      );
+    }
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.webContents.openDevTools();
-  }
+  // Optional: log __dirname for debugging path issues
+  console.log(`__dirname=${__dirname}`);
 }
 
 // ────────────────────────────────────────────────
