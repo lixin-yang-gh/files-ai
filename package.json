@@ -4,30 +4,27 @@
   "type": "module",
   "main": "./dist/main/main.js",
   "scripts": {
-    "prebuild": "node scripts/copy-static.js",
-    "start": "npm run build && electron .",
-    "dev": "concurrently \"npm run build:watch\" \"npm run start:electron\"",
-    "build": "tsc",
-    "build:watch": "tsc --watch",
-    "copy:static": "node scripts/copy-static.js",
-    "start:electron": "electron .",
-    "package": "npm run build && electron-builder",
+    "dev": "npm run build && cross-env NODE_ENV=development electron .",
+    "build": "tsc && npm run copy:static",
+    "copy:static": "node scripts/copy-static.cjs",
     "package:win": "npm run build && electron-builder --win",
     "package:mac": "npm run build && electron-builder --mac",
     "package:linux": "npm run build && electron-builder --linux",
-    "postinstall": "echo 'Installation complete'"
+    "package": "npm run build && electron-builder"
   },
   "devDependencies": {
     "@types/electron-store": "^3.2.2",
     "@types/node": "^20.0.0",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
+    "@vitejs/plugin-react": "^5.1.2",
     "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
     "electron": "^40.1.0",
     "electron-builder": "^26.6.0",
     "fs-extra": "^11.1.0",
     "typescript": "^5.0.0",
-    "cross-env": "^7.0.3",
+    "vite": "^7.3.1",
     "wait-on": "^7.0.1"
   },
   "dependencies": {
