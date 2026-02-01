@@ -13,19 +13,18 @@ const App: React.FC = () => {
     setCurrentFile(filePath);
   };
 
-  const handleFolderOpen = (path: string) => {
-    setCurrentPath(path);
-    setCurrentFile(null);
-  };
-
   return (
     <div className="app-container">
-      <Sidebar 
+      <Sidebar
         onFileSelect={handleFileSelect}
         currentPath={currentPath}
+        onFolderOpen={setCurrentPath} // Add this prop
       />
       <div className="main-content">
-        <FileManager filePath={currentFile} />
+        <FileManager
+          filePath={currentFile}
+          rootFolder={currentPath} // Pass currentPath as rootFolder
+        />
       </div>
     </div>
   );

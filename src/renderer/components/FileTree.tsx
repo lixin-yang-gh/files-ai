@@ -4,9 +4,14 @@ import { FileItem } from '../../shared/types';
 interface FileTreeProps {
   rootPath: string;
   onFileSelect: (filePath: string) => void;
+  onFolderOpen?: (path: string) => void; // Optional prop
 }
 
-const FileTree: React.FC<FileTreeProps> = ({ rootPath, onFileSelect }) => {
+const FileTree: React.FC<FileTreeProps> = ({
+  rootPath,
+  onFileSelect,
+  onFolderOpen
+}) => {
   const [tree, setTree] = useState<FileItem[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
@@ -20,6 +25,10 @@ const FileTree: React.FC<FileTreeProps> = ({ rootPath, onFileSelect }) => {
     try {
       const items = await window.electronAPI.readDirectory(dirPath);
       setTree(items);
+      // Notify parent component about the opened folder
+      if (onFolderOpen) {
+        onFolderOpen(dirPath);
+      }
     } catch (error) {
       console.error('Error loading directory:', error);
     }
@@ -49,10 +58,10 @@ const FileTree: React.FC<FileTreeProps> = ({ rootPath, onFileSelect }) => {
 
   const renderTreeItem = (item: FileItem, depth: number = 0) => {
     const isExpanded = expandedFolders.has(item.path);
-    
+
     return (
       <div key={item.path}>
-        <div 
+        <div
           className="tree-item"
           style={{ paddingLeft: `${depth * 20 + 10}px` }}
           onClick={() => toggleFolder(item)}
@@ -79,7 +88,7 @@ const FileTree: React.FC<FileTreeProps> = ({ rootPath, onFileSelect }) => {
     <div className="file-tree">
       <div className="tree-header">
         <h3>Explorer</h3>
-        <button 
+        <button
           className="open-folder-btn"
           onClick={async () => {
             const path = await window.electronAPI.openDirectory();
