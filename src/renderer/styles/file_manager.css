@@ -161,3 +161,344 @@ pre::-webkit-scrollbar-thumb {
 pre::-webkit-scrollbar-thumb:hover {
     background: #4a4a4a;
 }
+
+
+/* FileTree checkbox styles */
+.tree-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+    cursor: pointer;
+}
+
+.tree-checkbox {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.tree-item-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    padding: 2px 0;
+}
+
+.tree-item-content.highlighted {
+    background-color: #e3f2fd;
+    border-radius: 4px;
+}
+
+.tree-header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.tree-stats {
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Selected files in Overview tab */
+.selected-files-section {
+    margin-bottom: 20px;
+}
+
+.selected-files-list {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.selected-files-header {
+    display: grid;
+    grid-template-columns: 1fr 2fr 80px;
+    background-color: #f8f9fa;
+    padding: 8px 12px;
+    font-weight: bold;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.selected-files-scroll {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.selected-file-item {
+    display: grid;
+    grid-template-columns: 1fr 2fr 80px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    align-items: center;
+}
+
+.selected-file-item:hover {
+    background-color: #f8f9fa;
+}
+
+.selected-file-item:last-child {
+    border-bottom: none;
+}
+
+.file-name,
+.file-path,
+.file-size {
+    padding: 2px 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-path {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.file-size {
+    text-align: right;
+    font-size: 0.85em;
+    color: #888;
+}
+
+.empty-selection {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.preview-info-section {
+    margin-top: 30px;
+}
+
+.preview-info {
+    background-color: #f8f9fa;
+    padding: 16px;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+}
+
+.tab-navigation {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #dee2e6;
+}
+
+.switch-to-content-btn {
+    margin-top: 8px;
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.switch-to-content-btn:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.switch-to-content-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.tab-panel {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.tab-panel.overview,
+.tab-panel.empty-selection {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #aaa;
+}
+
+.selected-files-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+
+.selected-files-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.table-header {
+  display: flex;
+  background: #252526;
+  padding: 8px 12px;
+  font-weight: 500;
+  border-bottom: 1px solid #333;
+}
+
+.table-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.table-row {
+  display: flex;
+  padding: 8px 12px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.table-row:hover {
+  background: #2a2d2e;
+}
+
+.col-name,
+.cell-name {
+  flex: 3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-path,
+.cell-path {
+  flex: 5;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #333;
+  margin-bottom: 12px;
+}
+
+.file-title-group {
+  flex: 1;
+}
+
+.file-path {
+  font-size: 0.9em;
+  color: #888;
+  margin-top: 4px;
+}
+
+.back-btn {
+  padding: 6px 12px;
+  background: #2a2d2e;
+  border: 1px solid #444;
+  color: #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  background: #36393f;
+}
+
+.file-content-area {
+  flex: 1;
+  overflow: hidden;
+}
+
+.code-content {
+  margin: 0;
+  height: 100%;
+  padding: 16px;
+  background: #1e1e1e;
+  overflow: auto;
+  font-family: 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.file-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.save-btn {
+  padding: 6px 16px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #2a2d2e;
+  color: #ccc;
+  cursor: pointer;
+  font-weight: 500;
+  min-width: 90px;
+}
+
+.save-btn.dirty {
+  background: #0e639c;
+  border-color: #007acc;
+  color: white;
+}
+
+.save-btn.saving {
+  background: #444;
+  cursor: wait;
+}
+
+.save-btn.success {
+  background: #2e7d32;
+  border-color: #2e7d32;
+  color: white;
+}
+
+.save-btn.error {
+  background: #c62828;
+  border-color: #c62828;
+  color: white;
+}
+
+.save-error-banner {
+  background: #4a1c1c;
+  color: #ff8a80;
+  padding: 8px 16px;
+  margin: 0 16px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.file-content-area {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+.text-editor {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13.5px;
+  line-height: 1.45;
+  background: transparent;
+  color: #d4d4d4;
+  border: none;
+  resize: none;
+  outline: none;
+  white-space: pre;
+  overflow-y: auto;
+  tab-size: 2;
+}
+
+/* Optional: line numbers (simple version) */
+.text-editor {
+  /* If you want line numbers later, consider a more advanced approach with a library or custom component */
+}

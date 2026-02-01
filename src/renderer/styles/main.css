@@ -40,7 +40,7 @@ body {
   color: #cccccc;
 }
 
-.open-folder-btn {
+.button {
   width: 100%;
   padding: 8px;
   background: #0e639c;
@@ -51,7 +51,7 @@ body {
   font-size: 12px;
 }
 
-.open-folder-btn:hover {
+.button:hover {
   background: #1177bb;
 }
 

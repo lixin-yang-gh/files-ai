@@ -8,9 +8,14 @@ import './styles/file_manager.css';
 const App: React.FC = () => {
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [currentPath, setCurrentPath] = useState<string>('');
+  const [selectedFilePaths, setSelectedFilePaths] = useState<string[]>([]);
 
   const handleFileSelect = (filePath: string) => {
     setCurrentFile(filePath);
+  };
+
+  const handleSelectedPathsChange = (paths: string[]) => {
+    setSelectedFilePaths(paths);
   };
 
   return (
@@ -18,12 +23,14 @@ const App: React.FC = () => {
       <Sidebar
         onFileSelect={handleFileSelect}
         currentPath={currentPath}
-        onFolderOpen={setCurrentPath} // Add this prop
+        onFolderOpen={setCurrentPath}
+        onSelectedPathsChange={handleSelectedPathsChange}
       />
       <div className="main-content">
         <FileManager
           filePath={currentFile}
-          rootFolder={currentPath} // Pass currentPath as rootFolder
+          rootFolder={currentPath}
+          selectedFilePaths={selectedFilePaths}
         />
       </div>
     </div>

@@ -4,6 +4,8 @@ export interface FileItem {
   isDirectory: boolean;
   isFile: boolean;
   children?: FileItem[];
+  isChecked?: boolean;
+  isHighlighted?: boolean;
 }
 
 export interface FileContent {

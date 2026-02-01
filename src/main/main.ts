@@ -90,17 +90,37 @@ ipcMain.handle('fs:readFile', async (_, filePath: string) => {
   }
 });
 
-ipcMain.handle('fs:getFileStats', async (_, filePath: string) => {
+ipcMain.handle('get-file-stats', async (_, filePath: string) => {
   try {
-    const stats = await fs.promises.stat(filePath);
+    const stats = await fs.promises.stat(filePath);   // ← correct: fs.promises.stat
     return {
       size: stats.size,
-      modified: stats.mtime,
       isDirectory: stats.isDirectory(),
       isFile: stats.isFile(),
+      mtime: stats.mtime.getTime(),        // optional
+      birthtime: stats.birthtime.getTime(), // optional
     };
-  } catch (error) {
-    throw error;
+  } catch (err: any) {
+    console.error(`Failed to stat ${filePath}:`, err);
+    throw new Error(`Cannot get stats for ${filePath}: ${err.message}`);
+  }
+});
+
+ipcMain.handle('write-file', async (event, { path, content }) => {
+  try {
+    await fs.promises.writeFile(path, content, 'utf-8');
+    return { success: true };
+  } catch (err) {
+    throw err; // or return { success: false, error: err.message }
+  }
+});
+
+ipcMain.handle('read-file', async (event, filePath: string) => {
+  try {
+    const content = await fs.readFile(filePath, 'utf-8');
+    return { path: filePath, content };
+  } catch (err: any) {
+    throw new Error(`Cannot read file ${filePath}: ${err.message}`);
   }
 });
 
