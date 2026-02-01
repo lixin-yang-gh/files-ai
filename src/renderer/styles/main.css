@@ -80,7 +80,8 @@ body {
   background: #094771;
 }
 
-.folder-icon, .file-icon {
+.folder-icon,
+.file-icon {
   margin-right: 6px;
   font-size: 14px;
 }
@@ -115,57 +116,6 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.file-viewer {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.file-header {
-  padding: 10px 20px;
-  background: #252526;
-  border-bottom: 1px solid #1e1e1e;
-}
-
-.file-header h3 {
-  font-size: 13px;
-  font-weight: 600;
-  color: #cccccc;
-  margin-bottom: 4px;
-}
-
-.file-path {
-  font-size: 11px;
-  color: #888;
-  font-family: monospace;
-}
-
-.file-content {
-  flex: 1;
-  overflow: auto;
-  padding: 20px;
-}
-
-.file-content pre {
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  color: #d4d4d4;
-}
-
-/* Empty/Loading/Error States */
-.empty-state, .loading-spinner, .error-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #888;
 }
 
 .loading-spinner {

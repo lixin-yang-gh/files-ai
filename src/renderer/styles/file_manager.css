@@ -1,0 +1,161 @@
+/* file_manager.css — consolidated & dark-themed */
+
+.file-manager {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+    /* match main-content background */
+    color: #d4d4d4;
+}
+
+.header-bar {
+    height: 40px;
+    min-height: 40px;
+    background: #252526;
+    border-bottom: 1px solid #333333;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    font-size: 14px;
+}
+
+/* ────────────────────────────────────────
+   Tabs
+───────────────────────────────────────── */
+
+.tabs-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.tab-list {
+    display: flex;
+    border-bottom: 1px solid #2d2d2d;
+    background: #252526;
+    flex-shrink: 0;
+}
+
+.tab {
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #bbbbbb;
+    position: relative;
+    transition: all 0.12s ease;
+}
+
+.tab:hover {
+    background: #2a2d2e;
+    color: #dddddd;
+}
+
+.tab.active {
+    background: #1e1e1e;
+    color: #cccccc;
+    border-bottom: 2px solid #007acc;
+    font-weight: 500;
+}
+
+/* ────────────────────────────────────────
+   Tab content area
+───────────────────────────────────────── */
+
+.tab-content {
+    flex: 1;
+    overflow: hidden;
+    /* important: prevents double scrollbars */
+    background: #1e1e1e;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* Loading / Error / Empty states (shared) */
+.loading-spinner,
+.error-message,
+.empty-state,
+.empty-tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    color: #888888;
+    text-align: center;
+}
+
+.error-message {
+    color: #f48771;
+}
+
+/* ────────────────────────────────────────
+   File content view (second tab)
+───────────────────────────────────────── */
+
+.file-content-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.file-header {
+    padding: 12px 20px;
+    background: #252526;
+    border-bottom: 1px solid #333333;
+    flex-shrink: 0;
+}
+
+.file-header h3 {
+    margin: 0 0 6px 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.file-path {
+    font-size: 11.5px;
+    color: #888888;
+    font-family: 'Consolas', 'Monaco', monospace;
+    word-break: break-all;
+}
+
+/* Main code/pre view */
+pre {
+    margin: 0;
+    padding: 16px 20px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    flex: 1;
+    overflow: auto;
+}
+
+/* Better scrollbar integration */
+pre::-webkit-scrollbar {
+    width: 10px;
+}
+
+pre::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: #424242;
+    border-radius: 2px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+    background: #4a4a4a;
+}
