@@ -18,9 +18,42 @@ const FileTree: React.FC<FileTreeProps> = ({
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedFilePaths, setSelectedFilePaths] = useState<Set<string>>(new Set());
   const [highlightedFile, setHighlightedFile] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Use ref to track if we should notify parent
   const prevSelectedPathsRef = useRef<string[]>([]);
+
+  // Load last opened folder on initial mount
+  useEffect(() => {
+    const loadLastOpenedFolder = async () => {
+      try {
+        const lastFolder = await window.electronAPI.getLastOpenedFolder();
+        if (lastFolder) {
+          // Check if the folder still exists
+          try {
+            const stats = await window.electronAPI.getFileStats(lastFolder);
+            if (stats.isDirectory) {
+              // Load the directory
+              await loadDirectory(lastFolder);
+              if (onFolderOpen) {
+                onFolderOpen(lastFolder);
+              }
+            }
+          } catch (error) {
+            console.warn('Last opened folder no longer exists:', lastFolder);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading last opened folder:', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    if (!isInitialized) {
+      loadLastOpenedFolder();
+    }
+  }, [isInitialized, onFolderOpen]);
 
   // Notify parent about selected paths changes - use callback to avoid infinite loop
   useEffect(() => {
@@ -37,13 +70,16 @@ const FileTree: React.FC<FileTreeProps> = ({
   }, [selectedFilePaths, onSelectedPathsChange]);
 
   useEffect(() => {
-    if (rootPath) {
+    if (rootPath && isInitialized) {
       loadDirectory(rootPath);
     }
-  }, [rootPath]);
+  }, [rootPath, isInitialized]);
 
   const loadDirectory = async (dirPath: string) => {
     try {
+      // Save the opened folder
+      await window.electronAPI.saveLastOpenedFolder(dirPath);
+      
       const items = await window.electronAPI.readDirectory(dirPath);
       const itemsWithState = items.map(item => ({
         ...item,
@@ -336,6 +372,7 @@ const FileTree: React.FC<FileTreeProps> = ({
       </div>
       <div className="tree-stats">
         <small>Selected: {selectedFilePaths.size} files | Highlighted: {highlightedFile ? '1 file' : 'none'}</small>
+        {!isInitialized && <span className="loading-indicator">Loading last folder...</span>}
       </div>
       <div className="tree-content">
         {tree.map(item => renderTreeItem(item))}

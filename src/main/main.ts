@@ -1,10 +1,23 @@
-// main.ts (updated with fixes)
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import * as path from 'path';
-import * as fs from 'fs/promises';  // ← import fs.promises directly for clarity
+import * as fs from 'fs/promises';
 import { fileURLToPath } from 'url';
+import Store from 'electron-store';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Define the store schema
+interface StoreSchema {
+  lastOpenedFolder?: string;
+}
+
+// Initialize electron-store
+const store = new Store<StoreSchema>({
+  defaults: {
+    lastOpenedFolder: undefined
+  },
+  name: 'app-settings'
+});
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -49,8 +62,7 @@ async function createWindow() {
   console.log(`__dirname=${__dirname}`);
 }
 
-// IPC Handlers (cleaned up - removed duplicates, use consistent channels)
-
+// IPC Handlers
 ipcMain.handle('dialog:openDirectory', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],
@@ -106,8 +118,17 @@ ipcMain.handle('write-file', async (_, { path: filePath, content }) => {
   }
 });
 
-// App lifecycle
+// Store-related IPC handlers - ADD THESE
+ipcMain.handle('store:getLastOpenedFolder', () => {
+  return store.get('lastOpenedFolder');
+});
 
+ipcMain.handle('store:saveLastOpenedFolder', (_, folderPath: string) => {
+  store.set('lastOpenedFolder', folderPath);
+  return { success: true };
+});
+
+// App lifecycle
 app.whenReady().then(createWindow);
 
 app.on('activate', () => {
