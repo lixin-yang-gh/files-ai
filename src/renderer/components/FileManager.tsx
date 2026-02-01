@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileContent } from '../../shared/types';
-import { getErrorMessage,getRelativePath } from '../../shared/utils';
+import { getErrorMessage, getRelativePath } from '../../shared/utils';
 
 interface FileManagerProps {
     filePath: string | null;
@@ -52,9 +52,9 @@ const FileManager: React.FC<FileManagerProps> = ({ filePath, rootFolder }) => {
         }
     };
 
-    const relativePath =getRelativePath(filePath, rootFolder);
+    const relativePath = getRelativePath(filePath, rootFolder);
     const fileName = relativePath.split(/[\\/]/).pop() || 'Untitled';
-    const header_bar_text="File Manager"
+    const header_bar_text = `File Manager - ${rootFolder}`
 
     if (!filePath) {
         return (

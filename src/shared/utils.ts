@@ -27,30 +27,34 @@ export function getRelativePath(filePath: string | null, rootFolder: string | nu
   }
 
   try {
-    // Normalize both paths (handles / vs \, trailing slashes, etc.)
-    const normalizedFile = path.normalize(filePath);
-    const normalizedRoot = path.normalize(rootFolder);
+    // Convert to absolute paths for consistency
+    const absoluteFile = path.resolve(filePath);
+    const absoluteRoot = path.resolve(rootFolder);
 
-    // Compute relative path
-    let relative = path.relative(normalizedRoot, normalizedFile);
+    // Prepare for comparison
+    const fileForCompare = process.platform === 'win32' ? absoluteFile.toLowerCase() : absoluteFile;
+    const rootForCompare = process.platform === 'win32' ? absoluteRoot.toLowerCase() : absoluteRoot;
 
-    // On Windows, path.relative can return path with ..\ — we usually want ./ style or clean name
-    // Convert backslashes to forward slashes for consistency in UI
-    relative = relative.replace(/\\/g, '/');
+    // Ensure root ends with separator
+    const rootWithSep = rootForCompare.endsWith(path.sep) ? rootForCompare : rootForCompare + path.sep;
 
-    // If result is empty, it means file is exactly the root (rare)
-    if (relative === '' || relative === '.') {
-      return '(root folder)';
+    // Check if file is inside root
+    if (!fileForCompare.startsWith(rootWithSep)) {
+      return absoluteFile;
     }
 
-    // Remove leading ./ if present
-    if (relative.startsWith('./')) {
-      relative = relative.slice(2);
-    }
-
-    return relative || '(root)';
+    // Extract portion after root
+    const relativePortion = absoluteFile.slice(absoluteRoot.length);
+    
+    // Clean up: remove leading separator if present
+    let result = relativePortion.replace(/^[\\/]+/, '');
+    
+    // Convert to forward slashes for UI consistency
+    result = result.replace(/\\/g, '/');
+    
+    return result || '(root folder)';
   } catch (err) {
     console.warn('Failed to compute relative path:', err);
-    return filePath; // fallback
+    return filePath;
   }
 }
