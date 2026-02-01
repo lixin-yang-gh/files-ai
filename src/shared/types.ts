@@ -12,3 +12,7 @@ export interface FileContent {
   content: string;
   path: string;
 }
+
+export interface StoreConfig {
+  lastOpenedFolder?: string;
+}

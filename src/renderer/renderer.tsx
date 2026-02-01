@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import Sidebar from './components/Sidebar';
 import FileManager from './components/FileManager';
 import './styles/main.css';
+import './styles/file_tree.css';
 import './styles/file_manager.css';
 
 const App: React.FC = () => {

@@ -1,14 +1,14 @@
-// main.ts
+// main.ts (updated with fixes)
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import * as path from 'path';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';  // ← import fs.promises directly for clarity
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let mainWindow: BrowserWindow | null = null;
 
-function createWindow() {
+async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -16,33 +16,27 @@ function createWindow() {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      // sandbox: false,  // ← only enable temporarily if debugging CSP/sandbox issues
     },
     titleBarStyle: 'hiddenInset',
   });
 
   console.log(`env=${process.env.NODE_ENV}`);
 
-  // ────────────────────────────────────────────────
-  // Conditional loading: dev server vs built file
-  // ────────────────────────────────────────────────
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
   if (isDev && process.env['ELECTRON_RENDERER_URL']) {
-    // Development: load from Vite dev server (electron-vite sets this env var)
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    // Production / packaged: load built index.html
     const indexPath = path.join(__dirname, '../renderer/index.html');
     console.log(`Trying to load: ${indexPath}`);
-    if (fs.existsSync(indexPath)) {
+    if (await fs.access(indexPath).then(() => true).catch(() => false)) {
       mainWindow.loadFile(indexPath);
     } else {
       console.error('index.html not found at:', indexPath);
       console.log('Current __dirname:', __dirname);
       try {
-        console.log('Files in dist/renderer:', fs.readdirSync(path.join(__dirname, '../renderer')));
+        console.log('Files in dist/renderer:', await fs.readdir(path.join(__dirname, '../renderer')));
       } catch (e) {
         console.error('Cannot read dist/renderer:', e);
       }
@@ -52,13 +46,10 @@ function createWindow() {
     }
   }
 
-  // Optional: log __dirname for debugging path issues
   console.log(`__dirname=${__dirname}`);
 }
 
-// ────────────────────────────────────────────────
-// IPC Handlers
-// ────────────────────────────────────────────────
+// IPC Handlers (cleaned up - removed duplicates, use consistent channels)
 
 ipcMain.handle('dialog:openDirectory', async () => {
   const result = await dialog.showOpenDialog({
@@ -69,7 +60,7 @@ ipcMain.handle('dialog:openDirectory', async () => {
 
 ipcMain.handle('fs:readDirectory', async (_, dirPath: string) => {
   try {
-    const items = await fs.promises.readdir(dirPath, { withFileTypes: true });
+    const items = await fs.readdir(dirPath, { withFileTypes: true });
     return items.map((item) => ({
       name: item.name,
       path: path.join(dirPath, item.name),
@@ -81,41 +72,7 @@ ipcMain.handle('fs:readDirectory', async (_, dirPath: string) => {
   }
 });
 
-ipcMain.handle('fs:readFile', async (_, filePath: string) => {
-  try {
-    const content = await fs.promises.readFile(filePath, 'utf-8');
-    return { content, path: filePath };
-  } catch (error) {
-    throw error;
-  }
-});
-
-ipcMain.handle('get-file-stats', async (_, filePath: string) => {
-  try {
-    const stats = await fs.promises.stat(filePath);   // ← correct: fs.promises.stat
-    return {
-      size: stats.size,
-      isDirectory: stats.isDirectory(),
-      isFile: stats.isFile(),
-      mtime: stats.mtime.getTime(),        // optional
-      birthtime: stats.birthtime.getTime(), // optional
-    };
-  } catch (err: any) {
-    console.error(`Failed to stat ${filePath}:`, err);
-    throw new Error(`Cannot get stats for ${filePath}: ${err.message}`);
-  }
-});
-
-ipcMain.handle('write-file', async (event, { path, content }) => {
-  try {
-    await fs.promises.writeFile(path, content, 'utf-8');
-    return { success: true };
-  } catch (err) {
-    throw err; // or return { success: false, error: err.message }
-  }
-});
-
-ipcMain.handle('read-file', async (event, filePath: string) => {
+ipcMain.handle('read-file', async (_, filePath: string) => {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     return { path: filePath, content };
@@ -124,22 +81,37 @@ ipcMain.handle('read-file', async (event, filePath: string) => {
   }
 });
 
-// ────────────────────────────────────────────────
-// App lifecycle
-// ────────────────────────────────────────────────
-
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+ipcMain.handle('get-file-stats', async (_, filePath: string) => {
+  try {
+    const stats = await fs.stat(filePath);
+    return {
+      size: stats.size,
+      isDirectory: stats.isDirectory(),
+      isFile: stats.isFile(),
+      mtime: stats.mtime.getTime(),
+      birthtime: stats.birthtime.getTime(),
+    };
+  } catch (err: any) {
+    console.error(`Failed to stat ${filePath}:`, err);
+    throw new Error(`Cannot get stats for ${filePath}: ${err.message}`);
+  }
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
+ipcMain.handle('write-file', async (_, { path: filePath, content }) => {
+  try {
+    await fs.writeFile(filePath, content, 'utf-8');
+    return { success: true };
+  } catch (err: any) {
+    throw new Error(`Cannot write file ${filePath}: ${err.message}`);
+  }
+});
+
+// App lifecycle
+
+app.whenReady().then(createWindow);
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
   }
 });
