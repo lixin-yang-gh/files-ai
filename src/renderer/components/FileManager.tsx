@@ -4,21 +4,23 @@ import { getErrorMessage, getRelativePath } from '../../shared/utils';
 
 interface FileManagerProps {
     filePath: string | null;
-    rootFolder?: string | null; // ← we'll use this to compute relative path
+    rootFolder?: string | null;
 }
 
 const FileManager: React.FC<FileManagerProps> = ({ filePath, rootFolder }) => {
     const [content, setContent] = useState<FileContent | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState(1); // 0 = empty tab, 1 = content tab
+    const [activeTab, setActiveTab] = useState(0); // Always start with Overview tab
 
     useEffect(() => {
         if (filePath) {
             loadFile(filePath);
-            setActiveTab(1); // auto-switch to content tab when file is selected
+            // Do NOT auto-switch tabs when file is selected
+            // Keep user on their current tab (Overview or Content)
         } else {
             setContent(null);
+            // Reset to Overview tab only when no file is selected
             setActiveTab(0);
         }
     }, [filePath]);
@@ -54,7 +56,13 @@ const FileManager: React.FC<FileManagerProps> = ({ filePath, rootFolder }) => {
 
     const relativePath = getRelativePath(filePath, rootFolder);
     const fileName = relativePath.split(/[\\/]/).pop() || 'Untitled';
-    const header_bar_text = `File Manager - ${rootFolder}`
+    const header_bar_text = `File Manager${rootFolder ? ` - ${rootFolder}` : ''}`;
+
+    // Get tab name based on whether a file is selected
+    const getContentTabName = () => {
+        if (!filePath) return 'No file selected';
+        return relativePath;
+    };
 
     if (!filePath) {
         return (
@@ -93,8 +101,9 @@ const FileManager: React.FC<FileManagerProps> = ({ filePath, rootFolder }) => {
                         className={`tab ${activeTab === 1 ? 'active' : ''}`}
                         onClick={() => setActiveTab(1)}
                         title={filePath}
+                        disabled={!filePath}
                     >
-                        {relativePath}
+                        {getContentTabName()}
                     </button>
                 </div>
 
@@ -104,17 +113,24 @@ const FileManager: React.FC<FileManagerProps> = ({ filePath, rootFolder }) => {
                     ) : error ? (
                         <div className="error-message">{error}</div>
                     ) : activeTab === 0 ? (
-                        // Tab 1: empty / future placeholder
-                        <div className="empty-tab-content">
-                            <p>File overview / metadata / AI analysis coming soon...</p>
+                        // Overview tab
+                        <div className="overview-tab-content">
                         </div>
                     ) : (
-                        // Tab 2: file content
+                        // Content tab
                         <div className="file-content-view">
                             <div className="file-header">
                                 <h3>{fileName}</h3>
                                 <div className="file-path" title={filePath}>
                                     {filePath}
+                                </div>
+                                <div className="file-actions">
+                                    <button
+                                        className="back-to-overview-btn"
+                                        onClick={() => setActiveTab(0)}
+                                    >
+                                        Back to Overview
+                                    </button>
                                 </div>
                             </div>
                             <pre>{content?.content}</pre>
