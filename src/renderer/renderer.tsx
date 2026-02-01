@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import Sidebar from './components/Sidebar';
-import FileViewer from './components/FileViewer';
+import FileManager from './components/FileManager';
 import './styles/main.css';
 
 const App: React.FC = () => {
@@ -24,7 +24,7 @@ const App: React.FC = () => {
         currentPath={currentPath}
       />
       <div className="main-content">
-        <FileViewer filePath={currentFile} />
+        <FileManager filePath={currentFile} />
       </div>
     </div>
   );

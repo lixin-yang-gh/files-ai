@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { FileContent } from '../../shared/types';
 import { getErrorMessage } from '../../shared/utils';
 
-interface FileViewerProps {
+interface FileManagerProps {
     filePath: string | null;
 }
 
-const FileViewer: React.FC<FileViewerProps> = ({ filePath }) => {
+const FileManager: React.FC<FileManagerProps> = ({ filePath }) => {
     const [content, setContent] = useState<FileContent | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -89,4 +89,4 @@ const FileViewer: React.FC<FileViewerProps> = ({ filePath }) => {
     );
 };
 
-export default FileViewer;
+export default FileManager;

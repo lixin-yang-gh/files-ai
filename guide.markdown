@@ -21,7 +21,7 @@ electron-file-viewer/
 │   ├── renderer/
 │   │   ├── components/
 │   │   │   ├── FileTree.tsx
-│   │   │   ├── FileViewer.tsx
+│   │   │   ├── FileManager.tsx
 │   │   │   └── Sidebar.tsx
 │   │   ├── styles/
 │   │   │   └── main.css
@@ -271,16 +271,16 @@ const FileTree: React.FC<FileTreeProps> = ({ rootPath, onFileSelect }) => {
 export default FileTree;
 ```
 
-### `src/renderer/components/FileViewer.tsx`
+### `src/renderer/components/FileManager.tsx`
 ```tsx
 import React, { useState, useEffect } from 'react';
 import { FileContent } from '../../shared/types';
 
-interface FileViewerProps {
+interface FileManagerProps {
   filePath: string | null;
 }
 
-const FileViewer: React.FC<FileViewerProps> = ({ filePath }) => {
+const FileManager: React.FC<FileManagerProps> = ({ filePath }) => {
   const [content, setContent] = useState<FileContent | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -363,7 +363,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ filePath }) => {
   );
 };
 
-export default FileViewer;
+export default FileManager;
 ```
 
 ### `src/renderer/components/Sidebar.tsx`
@@ -615,7 +615,7 @@ body {
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import Sidebar from './components/Sidebar';
-import FileViewer from './components/FileViewer';
+import FileManager from './components/FileManager';
 import './styles/main.css';
 
 const App: React.FC = () => {
@@ -638,7 +638,7 @@ const App: React.FC = () => {
         currentPath={currentPath}
       />
       <div className="main-content">
-        <FileViewer filePath={currentFile} />
+        <FileManager filePath={currentFile} />
       </div>
     </div>
   );
@@ -686,7 +686,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     "react-dom": "^18.0.0"
   },
   "build": {
-    "appId": "com.example.fileviewer",
+    "appId": "com.example.FileManager",
     "productName": "File Viewer",
     "directories": {
       "output": "dist"
