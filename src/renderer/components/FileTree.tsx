@@ -20,7 +20,6 @@ const FileTree: React.FC<FileTreeProps> = ({
   const [highlightedFile, setHighlightedFile] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // Use ref to track if we should notify parent
   const prevSelectedPathsRef = useRef<string[]>([]);
 
   // Load last opened folder on initial mount
@@ -29,11 +28,9 @@ const FileTree: React.FC<FileTreeProps> = ({
       try {
         const lastFolder = await window.electronAPI.getLastOpenedFolder();
         if (lastFolder) {
-          // Check if the folder still exists
           try {
             const stats = await window.electronAPI.getFileStats(lastFolder);
             if (stats.isDirectory) {
-              // Load the directory
               await loadDirectory(lastFolder);
               if (onFolderOpen) {
                 onFolderOpen(lastFolder);
@@ -55,12 +52,11 @@ const FileTree: React.FC<FileTreeProps> = ({
     }
   }, [isInitialized, onFolderOpen]);
 
-  // Notify parent about selected paths changes - use callback to avoid infinite loop
+  // Notify parent about selected paths changes
   useEffect(() => {
     const currentPaths = Array.from(selectedFilePaths);
     const prevPaths = prevSelectedPathsRef.current;
     
-    // Only notify if paths actually changed
     if (onSelectedPathsChange && 
         (currentPaths.length !== prevPaths.length || 
          !currentPaths.every((path, idx) => path === prevPaths[idx]))) {
@@ -77,7 +73,6 @@ const FileTree: React.FC<FileTreeProps> = ({
 
   const loadDirectory = async (dirPath: string) => {
     try {
-      // Save the opened folder
       await window.electronAPI.saveLastOpenedFolder(dirPath);
       
       const items = await window.electronAPI.readDirectory(dirPath);
@@ -95,20 +90,19 @@ const FileTree: React.FC<FileTreeProps> = ({
     }
   };
 
-  // Helper function to collect all file paths from a folder recursively
-  const getAllFilePathsFromFolder = useCallback((folder: FileItem): string[] => {
+  // Helper to get ONLY first-level files from a folder
+  const getFirstLevelFilesFromFolder = useCallback((folder: FileItem): string[] => {
     const paths: string[] = [];
     
-    const collectPaths = (item: FileItem) => {
-      if (item.isFile) {
-        paths.push(item.path);
-      }
-      if (item.isDirectory && item.children) {
-        item.children.forEach(collectPaths);
-      }
-    };
+    // Only get immediate file children (not recursively)
+    if (folder.children) {
+      folder.children.forEach(child => {
+        if (child.isFile) {
+          paths.push(child.path);
+        }
+      });
+    }
     
-    collectPaths(folder);
     return paths;
   }, []);
 
@@ -130,69 +124,148 @@ const FileTree: React.FC<FileTreeProps> = ({
     setTree(prevTree => updateTreeItem(prevTree, item.path, { isChecked: checked }));
   }, []);
 
-  // Handle folder checkbox change
+  // Handle folder checkbox change - UPDATED to only select first-level files
   const handleFolderCheckboxChange = useCallback(async (item: FileItem, checked: boolean) => {
-    // Load children if not already loaded
-    let children = item.children;
-    if (!children) {
-      try {
-        children = await window.electronAPI.readDirectory(item.path);
-        children = children.map(child => ({
-          ...child,
-          isChecked: false,
-          isHighlighted: false
-        }));
-      } catch (error) {
-        console.error('Error loading folder:', error);
-        return;
+    // Auto-expand folder when checkbox is clicked
+    if (!expandedFolders.has(item.path)) {
+      const newExpanded = new Set(expandedFolders);
+      newExpanded.add(item.path);
+      setExpandedFolders(newExpanded);
+      
+      // Load children if not already loaded
+      if (!item.children) {
+        try {
+          const children = await window.electronAPI.readDirectory(item.path);
+          const childrenWithState = children.map(child => ({
+            ...child,
+            isChecked: false,
+            isHighlighted: false
+          }));
+          
+          // Update tree with loaded children
+          setTree(prevTree => {
+            const updatedTree = updateTreeItem(prevTree, item.path, { 
+              children: childrenWithState,
+              isChecked: checked 
+            });
+            
+            // Update children's checked state
+            return updateChildrenCheckedState(updatedTree, item.path, checked, false);
+          });
+          
+          // Get only first-level files
+          const firstLevelFiles = childrenWithState
+            .filter(child => child.isFile)
+            .map(file => file.path);
+          
+          // Update selected paths
+          setSelectedFilePaths(prev => {
+            const newSelectedPaths = new Set(prev);
+            if (checked) {
+              firstLevelFiles.forEach(path => newSelectedPaths.add(path));
+            } else {
+              firstLevelFiles.forEach(path => newSelectedPaths.delete(path));
+            }
+            return newSelectedPaths;
+          });
+          
+          return;
+        } catch (error) {
+          console.error('Error loading folder:', error);
+          return;
+        }
       }
     }
     
-    const allFilePaths = getAllFilePathsFromFolder({ ...item, children });
+    // If children already loaded
+    let children = item.children;
+    if (!children) {
+      children = [];
+    }
     
+    // Get only first-level files
+    const firstLevelFiles = children
+      .filter(child => child.isFile)
+      .map(file => file.path);
+    
+    // Update selected paths
     setSelectedFilePaths(prev => {
       const newSelectedPaths = new Set(prev);
       
       if (checked) {
-        // Add all file paths from this folder
-        allFilePaths.forEach(path => newSelectedPaths.add(path));
+        // Add only first-level file paths
+        firstLevelFiles.forEach(path => newSelectedPaths.add(path));
       } else {
-        // Remove all file paths from this folder
-        allFilePaths.forEach(path => newSelectedPaths.delete(path));
+        // Remove only first-level file paths
+        firstLevelFiles.forEach(path => newSelectedPaths.delete(path));
       }
       
       return newSelectedPaths;
     });
     
-    // Update tree state for folder and all children
+    // Update tree state for folder and its first-level children
     setTree(prevTree => {
-      const updateItemAndChildren = (items: FileItem[], targetPath: string, isChecked: boolean): FileItem[] => {
-        return items.map(treeItem => {
-          if (treeItem.path === targetPath) {
-            const updatedItem = { ...treeItem, isChecked };
-            if (updatedItem.children) {
-              updatedItem.children = updateChildrenCheckedState(updatedItem.children, isChecked);
-            }
-            return updatedItem;
-          }
-          if (treeItem.children) {
-            return { ...treeItem, children: updateItemAndChildren(treeItem.children, targetPath, isChecked) };
-          }
-          return treeItem;
-        });
-      };
-      
-      return updateItemAndChildren(prevTree, item.path, checked);
+      return updateFolderAndImmediateChildren(prevTree, item.path, checked);
     });
-  }, [getAllFilePathsFromFolder]);
+  }, [expandedFolders]);
 
-  // Helper to update children checked state
-  const updateChildrenCheckedState = (children: FileItem[], isChecked: boolean): FileItem[] => {
-    return children.map(child => ({
-      ...child,
-      isChecked: child.isFile ? isChecked : false,
-      children: child.children ? updateChildrenCheckedState(child.children, isChecked) : undefined
-    }));
+  // Helper to update folder and its immediate children only
+  const updateFolderAndImmediateChildren = (items: FileItem[], targetPath: string, isChecked: boolean): FileItem[] => {
+    return items.map(treeItem => {
+      if (treeItem.path === targetPath) {
+        const updatedItem = { ...treeItem, isChecked };
+        
+        // Update only immediate file children
+        if (updatedItem.children) {
+          updatedItem.children = updatedItem.children.map(child => {
+            if (child.isFile) {
+              return { ...child, isChecked };
+            }
+            // Don't change checkbox state of subfolders
+            return child;
+          });
+        }
+        
+        return updatedItem;
+      }
+      
+      if (treeItem.children) {
+        return { 
+          ...treeItem, 
+          children: updateFolderAndImmediateChildren(treeItem.children, targetPath, isChecked) 
+        };
+      }
+      
+      return treeItem;
+    });
+  };
+
+  // Helper to update children checked state (only files, not folders)
+  const updateChildrenCheckedState = (items: FileItem[], targetPath: string, isChecked: boolean, isRecursive: boolean = false): FileItem[] => {
+    return items.map(treeItem => {
+      if (treeItem.path === targetPath || isRecursive) {
+        const updatedItem = { ...treeItem, isChecked: treeItem.isFile ? isChecked : treeItem.isChecked };
+        
+        if (updatedItem.children) {
+          updatedItem.children = updatedItem.children.map(child => ({
+            ...child,
+            isChecked: child.isFile ? isChecked : child.isChecked, // Only check files, not folders
+            children: child.children ? updateChildrenCheckedState(child.children, targetPath, isChecked, true) : undefined
+          }));
+        }
+        
+        return updatedItem;
+      }
+      
+      if (treeItem.children) {
+        return { 
+          ...treeItem, 
+          children: updateChildrenCheckedState(treeItem.children, targetPath, isChecked, isRecursive) 
+        };
+      }
+      
+      return treeItem;
+    });
   };
 
   // Helper to update tree item
@@ -208,21 +281,25 @@ const FileTree: React.FC<FileTreeProps> = ({
     });
   };
 
-  const toggleFolder = async (item: FileItem) => {
+  const toggleFolder = async (item: FileItem, expandOnly: boolean = false) => {
     if (item.isDirectory) {
       const newExpanded = new Set(expandedFolders);
-      if (newExpanded.has(item.path)) {
+      
+      if (!expandOnly && newExpanded.has(item.path)) {
         newExpanded.delete(item.path);
       } else {
         newExpanded.add(item.path);
         if (!item.children) {
           try {
             const children = await window.electronAPI.readDirectory(item.path);
-            const updatedItem = { ...item, children: children.map(child => ({
-              ...child,
-              isChecked: false,
-              isHighlighted: false
-            })) };
+            const updatedItem = { 
+              ...item, 
+              children: children.map(child => ({
+                ...child,
+                isChecked: false,
+                isHighlighted: false
+              })) 
+            };
             
             setTree(prevTree => updateTreeItem(prevTree, item.path, { children: updatedItem.children }));
           } catch (error) {
@@ -234,7 +311,6 @@ const FileTree: React.FC<FileTreeProps> = ({
     } else {
       // Highlight file on click (for preview)
       setTree(prevTree => {
-        // Clear previous highlights
         const clearHighlights = (items: FileItem[]): FileItem[] => {
           return items.map(treeItem => ({
             ...treeItem,
@@ -245,7 +321,6 @@ const FileTree: React.FC<FileTreeProps> = ({
         
         const clearedTree = clearHighlights(prevTree);
         
-        // Set new highlight
         const updateHighlight = (items: FileItem[], targetPath: string): FileItem[] => {
           return items.map(treeItem => {
             if (treeItem.path === targetPath) {
@@ -266,16 +341,18 @@ const FileTree: React.FC<FileTreeProps> = ({
     }
   };
 
-  // Helper to check if folder should appear checked based on its children
+  // Check if folder should appear checked based on its FIRST-LEVEL file children only
   const isFolderChecked = useCallback((folder: FileItem): boolean => {
     if (!folder.children || folder.children.length === 0) {
       return false;
     }
     
-    const fileChildren = folder.children.filter(child => child.isFile);
-    if (fileChildren.length === 0) return false;
+    // Get only first-level file children
+    const firstLevelFiles = folder.children.filter(child => child.isFile);
+    if (firstLevelFiles.length === 0) return false;
     
-    return fileChildren.every(file => selectedFilePaths.has(file.path));
+    // Check if ALL first-level files are selected
+    return firstLevelFiles.every(file => selectedFilePaths.has(file.path));
   }, [selectedFilePaths]);
 
   const renderTreeItem = (item: FileItem, depth: number = 0) => {
@@ -288,7 +365,10 @@ const FileTree: React.FC<FileTreeProps> = ({
       <div key={item.path}>
         <div
           className="tree-item"
-          style={{ paddingLeft: `${depth * 20 + 10}px` }}
+          style={{ 
+            paddingLeft: `${depth * 16 + 10}px`, // Slightly reduced indentation
+            marginLeft: `${depth * 1}px` // Subtle visual indentation
+          }}
         >
           {/* Checkbox */}
           <input
@@ -310,6 +390,7 @@ const FileTree: React.FC<FileTreeProps> = ({
           <div 
             className={`tree-item-content ${item.isHighlighted ? 'highlighted' : ''}`}
             onClick={() => toggleFolder(item)}
+            style={{ padding: '2px 4px' }}
           >
             {item.isDirectory ? (
               <span className="folder-icon">
@@ -319,6 +400,11 @@ const FileTree: React.FC<FileTreeProps> = ({
               <span className="file-icon">📄</span>
             )}
             <span className="item-name">{item.name}</span>
+            {item.isDirectory && item.children && (
+              <span className="selection-badge">
+                {item.children.filter(child => child.isFile).length}
+              </span>
+            )}
           </div>
         </div>
         {item.isDirectory && isExpanded && item.children && (
@@ -343,6 +429,7 @@ const FileTree: React.FC<FileTreeProps> = ({
                 loadDirectory(path);
                 setSelectedFilePaths(new Set());
                 setHighlightedFile(null);
+                setExpandedFolders(new Set());
               }
             }}
           >
@@ -371,11 +458,25 @@ const FileTree: React.FC<FileTreeProps> = ({
         </div>
       </div>
       <div className="tree-stats">
-        <small>Selected: {selectedFilePaths.size} files | Highlighted: {highlightedFile ? '1 file' : 'none'}</small>
+        <small>
+          Selected: <strong>{selectedFilePaths.size}</strong> files | 
+          Highlighted: <strong>{highlightedFile ? '1' : '0'}</strong> file
+        </small>
         {!isInitialized && <span className="loading-indicator">Loading last folder...</span>}
       </div>
       <div className="tree-content">
-        {tree.map(item => renderTreeItem(item))}
+        {tree.length === 0 ? (
+          <div style={{ 
+            padding: '20px', 
+            textAlign: 'center', 
+            color: '#888', 
+            fontStyle: 'italic' 
+          }}>
+            {isInitialized ? 'No folder opened' : 'Loading...'}
+          </div>
+        ) : (
+          tree.map(item => renderTreeItem(item))
+        )}
       </div>
     </div>
   );

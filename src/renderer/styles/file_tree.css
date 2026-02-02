@@ -1,5 +1,5 @@
 /* =============================================
-   Sidebar / File Tree Styles
+   Sidebar / File Tree Styles - IMPROVED
    ============================================= */
 
 .sidebar {
@@ -8,8 +8,17 @@
     color: #cccccc;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #1e1e1e;
+    /* border-right: 1px solid #1e1e1e; */
     height: 100%;
+    overflow: hidden;
+}
+
+.file-tree {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;  /* Grow to fill sidebar, allow shrink if needed */
+    min-height: 0;
+    overflow: hidden;  /* Prevent overflow from children spilling out */
 }
 
 /* ─────────────────────────────────────────────
@@ -19,6 +28,8 @@
     padding: 10px 15px;
     border-bottom: 1px solid #1e1e1e;
     background: #252526;
+    flex-shrink: 0; /* Prevent header from shrinking */
+    height: 75px;
 }
 
 .tree-header h3 {
@@ -36,27 +47,67 @@
     margin-top: 8px;
 }
 
-/* ─────────────────────────────────────────────
-   Tree Content (main scrollable area)
-───────────────────────────────────────────── */
-.tree-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 5px 0;
+.tree-header-actions .button {
+    padding: 6px 12px;
+    background: #0e639c;
+    color: white;
+    border: none;
+    border-radius: 2px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.tree-header-actions .button:hover {
+    background: #1177bb;
+}
+
+.tree-header-actions .button:active {
+    background: #0d4f7a;
 }
 
 /* ─────────────────────────────────────────────
-   Tree Items (files & folders)
+   Tree Content (main scrollable area) - IMPROVED
+───────────────────────────────────────────── */
+.tree-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 5px 0;
+    overflow: auto;
+}
+
+/* Custom scrollbar */
+.tree-content::-webkit-scrollbar {
+    width: 10px;
+}
+
+.tree-content::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+.tree-content::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 5px;
+}
+
+.tree-content::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* ─────────────────────────────────────────────
+   Tree Items (files & folders) - IMPROVED
 ───────────────────────────────────────────── */
 .tree-item {
     display: flex;
     align-items: center;
-    padding: 4px 15px;
+    padding: 2px 15px; /* Reduced padding for more items */
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     user-select: none;
+    transition: background 0.15s ease;
+    min-height: 24px; /* Consistent height */
 }
 
 .tree-item:hover {
@@ -67,16 +118,59 @@
     background: #094771;
 }
 
+/* Checkbox styling */
 .tree-checkbox {
     margin-right: 8px;
     cursor: pointer;
+    width: 14px;
+    height: 14px;
+    accent-color: #0e639c; /* Modern browser support */
+}
+
+/* For better cross-browser checkbox */
+.tree-checkbox {
+    position: relative;
+    cursor: pointer;
+}
+
+.tree-checkbox::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #3c3c3c;
+    border: 1px solid #555;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+
+.tree-checkbox:checked::before {
+    background: #0e639c;
+    border-color: #0e639c;
+}
+
+.tree-checkbox:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
 }
 
 .tree-item-content {
     display: flex;
     align-items: center;
     flex: 1;
-    padding: 2px 0;
+    min-height: 24px; /* Match tree-item height */
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+.tree-item-content:hover {
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 .tree-item-content.highlighted {
@@ -88,17 +182,56 @@
 .file-icon {
     margin-right: 6px;
     font-size: 14px;
+    min-width: 16px; /* Prevent icon shift */
+    text-align: center;
+}
+
+.folder-icon {
+    color: #e2c08d; /* Warm color for folders */
+}
+
+.file-icon {
+    color: #cccccc; /* Neutral for files */
 }
 
 .item-name {
     font-size: 13px;
+    font-family: 'Segoe UI', 'SF Pro Text', -apple-system, sans-serif;
+    font-weight: 400;
+    color: #cccccc;
 }
 
 /* ─────────────────────────────────────────────
-   Nested children
+   Nested children - IMPROVED
 ───────────────────────────────────────────── */
 .tree-children {
     overflow: hidden;
+    position: relative;
+}
+
+/* ─────────────────────────────────────────────
+   Stats section
+───────────────────────────────────────────── */
+.tree-stats {
+    padding: 8px 12px;
+    background: #252526;
+    border-bottom: 1px solid #1e1e1e;
+    font-size: 11px;
+    color: #888;
+    flex-shrink: 0; /* Prevent shrinking */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tree-stats small {
+    color: #aaaaaa;
+}
+
+.loading-indicator {
+    color: #4ec9b0;
+    font-style: italic;
+    margin-left: 10px;
 }
 
 /* ─────────────────────────────────────────────
@@ -110,6 +243,7 @@
     background: #252526;
     font-size: 11px;
     color: #888;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .current-path {
@@ -119,13 +253,44 @@
 }
 
 /* ─────────────────────────────────────────────
-   Stats (optional - appears inconsistent with dark theme)
+   Tree expand/collapse animation
 ───────────────────────────────────────────── */
-/* Consider removing or adapting this light-themed block */
-.tree-stats {
-    padding: 8px 12px;
-    background: #252526;
-    border-bottom: 1px solid #1e1e1e;
-    font-size: 12px;
-    color: #aaaaaa;
+.tree-children {
+    animation: slideDown 0.2s ease-out;
+}
+
+.tree-children::before {
+    content: '';
+    position: absolute;
+    left: 15px;  /* Adjust this offset as needed to align better with icons/checkboxes (e.g., 15-30px) */
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ─────────────────────────────────────────────
+   Selection counter badge
+───────────────────────────────────────────── */
+.selection-badge {
+    display: inline-block;
+    background: #0e639c;
+    color: white;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 5px;
+    vertical-align: middle;
 }
