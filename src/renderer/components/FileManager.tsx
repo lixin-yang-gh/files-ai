@@ -79,7 +79,9 @@ const FileManager: React.FC<FileManagerProps> = ({
     ? 'Overview'
     : `Overview (${selectedFilePaths.length} selected)`;
 
-  const contentTabName = filePath ? getRelativePath(filePath, rootFolder) : 'No file selected';
+  const promptOrganizerTabName = 'Prompt Organizer';    
+
+  const fileEditorTabName = filePath ? getRelativePath(filePath, rootFolder) : 'No file selected';
 
   return (
     <div className="file-manager">
@@ -97,10 +99,18 @@ const FileManager: React.FC<FileManagerProps> = ({
           <button
             className={`tab ${activeTab === 1 ? 'active' : ''}`}
             onClick={() => handleTabChange(1)}
+            title={promptOrganizerTabName}
+          >
+            {promptOrganizerTabName}
+          </button>
+
+          <button
+            className={`tab ${activeTab === 2 ? 'active' : ''}`}
+            onClick={() => handleTabChange(2)}
             disabled={!filePath}
             title={filePath ?? undefined}
           >
-            {contentTabName}
+            {fileEditorTabName}
           </button>
         </div>
 
@@ -120,11 +130,17 @@ const FileManager: React.FC<FileManagerProps> = ({
                 />
               )}
 
-              {activeTab === 1 && filePath && (
-                <ContentTab
+              {activeTab === 1 && (
+                <PromptOrganizerTab
+                  onBackToOverview={() => handleTabChange(0)}
+                />
+              )}
+
+              {activeTab === 2 && filePath && (
+                <FileEditorTab
                   filePath={filePath}
                   relativePath={getRelativePath(filePath, rootFolder)}
-                  fileName={contentTabName.split(/[\\/]/).pop() || 'Untitled'}
+                  fileName={fileEditorTabName.split(/[\\/]/).pop() || 'Untitled'}
                   content={content?.content}
                   onBackToOverview={() => handleTabChange(0)}
                   selectedCount={selectedFilePaths.length}
@@ -191,9 +207,26 @@ function OverviewTabContent({ selectedFilePaths, rootFolder }: OverviewTabConten
 }
 
 // ──────────────────────────────────────────────
-// Content Tab (single file preview)
+// Prompt Organizer Tab
 // ──────────────────────────────────────────────
-interface ContentTabProps {
+interface PromptOrganizerTabProps {
+  onBackToOverview: () => void;
+}
+
+function PromptOrganizerTab({
+  onBackToOverview,
+}: PromptOrganizerTabProps) {
+
+  return (
+    <div className="tab-panel prompt-organizer">
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// File Editor Tab (single file viewing/editing)
+// ──────────────────────────────────────────────
+interface FileEditorTabProps {
   filePath: string;
   relativePath: string;
   fileName: string;
@@ -202,14 +235,14 @@ interface ContentTabProps {
   selectedCount: number;
 }
 
-function ContentTab({
+function FileEditorTab({
   filePath,
   relativePath,
   fileName,
   content: initialContent = '',
   onBackToOverview,
   selectedCount,
-}: ContentTabProps) {
+}: FileEditorTabProps) {
   const [text, setText] = useState(initialContent);
   const [isDirty, setIsDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
@@ -247,7 +280,7 @@ function ContentTab({
   };
 
   return (
-    <div className="tab-panel file-content">
+    <div className="tab-panel file-editor">
       <div className="file-header">
         <div className="file-title-group">
           <h3>{fileName}</h3>
@@ -282,7 +315,7 @@ function ContentTab({
         </div>
       )}
 
-      <div className="file-content-area">
+      <div className="file-editor-area">
         <textarea
           className="text-editor"
           value={text}

@@ -98,10 +98,25 @@
 }
 
 /* ────────────────────────────────────────
-   File content view (second tab)
+   Prompt organizer
 ───────────────────────────────────────── */
 
-.file-content-view {
+.prompt-organizer {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #888888;
+    font-size: 14px;
+    padding: 20px;
+    text-align: center;
+}
+
+/* ────────────────────────────────────────
+   File editor
+───────────────────────────────────────── */
+
+.file-editor-view {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -283,6 +298,7 @@ pre::-webkit-scrollbar-thumb:hover {
 }
 
 .selected-files-section {
+  width: 100%;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -290,6 +306,7 @@ pre::-webkit-scrollbar-thumb:hover {
 }
 
 .selected-files-table {
+  margin-top: 10px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -304,6 +321,7 @@ pre::-webkit-scrollbar-thumb:hover {
   padding: 8px 12px;
   font-weight: 500;
   border-bottom: 1px solid #333;
+  text-align: justify;
 }
 
 .table-body {
@@ -315,6 +333,7 @@ pre::-webkit-scrollbar-thumb:hover {
   display: flex;
   padding: 8px 12px;
   border-bottom: 1px solid #2a2a2a;
+  text-align: justify;
 }
 
 .table-row:hover {
@@ -370,7 +389,7 @@ pre::-webkit-scrollbar-thumb:hover {
   background: #36393f;
 }
 
-.file-content-area {
+.file-editor-area {
   flex: 1;
   overflow: hidden;
 }
@@ -437,7 +456,7 @@ pre::-webkit-scrollbar-thumb:hover {
   font-size: 0.9em;
 }
 
-.file-content-area {
+.file-editor-area {
   flex: 1;
   display: flex;
   overflow: hidden;
