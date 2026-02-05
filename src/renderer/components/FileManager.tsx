@@ -1,4 +1,4 @@
-// FileManager.tsx
+// FileManager.tsx - UPDATED
 import React, { useState, useEffect, useRef } from 'react';
 import { FileContent } from '../../shared/types';
 import { getErrorMessage, getRelativePath } from '../../shared/utils';
@@ -23,6 +23,7 @@ const FileManager: React.FC<FileManagerProps> = ({
   const [activeTab, setActiveTab] = useState(0);
 
   const prevSelectedCountRef = useRef(selectedFilePaths.length);
+  const shouldAutoSwitchTabRef = useRef(true); // NEW: Control auto-switching
 
   useEffect(() => {
     if (filePath) {
@@ -32,17 +33,29 @@ const FileManager: React.FC<FileManagerProps> = ({
     }
   }, [filePath]);
 
+  // FIXED: Only auto-switch to OverviewTab if coming from 0 selection to >0 selection
   useEffect(() => {
-    if (selectedFilePaths.length !== prevSelectedCountRef.current) {
+    const prevCount = prevSelectedCountRef.current;
+    const currentCount = selectedFilePaths.length;
+
+    // Only auto-switch when going from 0 to >0 selected files AND we're allowing auto-switch
+    if (shouldAutoSwitchTabRef.current && prevCount === 0 && currentCount > 0) {
+      setActiveTab(1); // Switch to Prompt Organizer when files are first selected
+      onTabChange?.(1);
+    } else if (currentCount === 0 && activeTab === 1) {
+      // If no files selected and we're on Prompt Organizer, switch to Overview
       setActiveTab(0);
       onTabChange?.(0);
-      prevSelectedCountRef.current = selectedFilePaths.length;
     }
-  }, [selectedFilePaths, onTabChange]);
+
+    prevSelectedCountRef.current = currentCount;
+  }, [selectedFilePaths, activeTab, onTabChange]);
 
   const handleTabChange = (tabIndex: number) => {
     setActiveTab(tabIndex);
     onTabChange?.(tabIndex);
+    // When user manually changes tab, disable auto-switching
+    shouldAutoSwitchTabRef.current = false;
   };
 
   const loadFile = async (path: string) => {
@@ -81,7 +94,7 @@ const FileManager: React.FC<FileManagerProps> = ({
     ? 'Overview'
     : `Overview (${selectedFilePaths.length} selected)`;
 
-  const promptOrganizerTabName = 'Prompt Organizer';    
+  const promptOrganizerTabName = 'Prompt Organizer';
 
   const fileEditorTabName = filePath ? getRelativePath(filePath, rootFolder) : 'No file selected';
 
@@ -101,9 +114,13 @@ const FileManager: React.FC<FileManagerProps> = ({
           <button
             className={`tab ${activeTab === 1 ? 'active' : ''}`}
             onClick={() => handleTabChange(1)}
-            title={promptOrganizerTabName}
+            disabled={selectedFilePaths.length === 0} // Disable if no files selected
+            title={selectedFilePaths.length === 0 ? "Select files to enable this tab" : promptOrganizerTabName}
           >
             {promptOrganizerTabName}
+            {selectedFilePaths.length > 0 && (
+              <span className="tab-badge">{selectedFilePaths.length}</span>
+            )}
           </button>
 
           <button
@@ -129,6 +146,7 @@ const FileManager: React.FC<FileManagerProps> = ({
                 <OverviewTab
                   selectedFilePaths={selectedFilePaths}
                   rootFolder={rootFolder}
+                  onGoToPromptOrganizer={() => handleTabChange(1)}
                 />
               )}
 
