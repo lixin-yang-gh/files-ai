@@ -16,7 +16,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [systemPrompt, setSystemPrompt] = useState('');
   const [task, setTask] = useState('');
   const [issues, setIssues] = useState('');
-  const [referencedFilesContent, setReferencedFilesContent] = useState<string>('');
+  const [referencedFilesContent, setReferencedFilesContent] = useState<string>('(empty)');
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [viewMode, setViewMode] = useState<'raw' | 'formatted'>('raw');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied'>('idle');
@@ -25,18 +25,19 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   useEffect(() => {
     const loadFileContents = async () => {
       if (selectedFilePaths.length === 0) {
-        setReferencedFilesContent('');
+        setReferencedFilesContent('(empty)');
         return;
       }
 
       setIsLoadingFiles(true);
       try {
+
         const filePromises = selectedFilePaths.map(async (filePath) => {
           try {
             const fileData = await window.electronAPI.readFile(filePath);
-            const relativePath = getRelativePath(filePath, rootFolder);
+            const relativePath = "<project_root>"+getRelativePath(filePath, rootFolder).replace(/\\/g, '/');
 
-            // FIXED: Better XML escaping
+            // FIXED: Better XML escaping (unchanged)
             const escapeXml = (text: string) => {
               return text
                 .replace(/&/g, '&amp;')
@@ -50,7 +51,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
             return `<file path="${relativePath}">\n${escapedContent}\n</file>`;
           } catch (error) {
             const relativePath = getRelativePath(filePath, rootFolder);
-            return `<file path="${relativePath}">\nError loading file: ${getErrorMessage(error)}\n</file>`;
+            return `<file path="${relativePath}">\nError loading filrMessage(error)}_APPEND_TEST\n</file>`;
           }
         });
 
@@ -71,12 +72,9 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const formatReferencedFiles = (content: string): string => {
     if (viewMode === 'raw') return content;
 
-    // FIXED: Better formatting for readability
     try {
-      // Format with syntax highlighting-like style
       let formatted = content;
 
-      // Format file tags
       formatted = formatted.replace(
         /<file path="([^"]+)">/g,
         '<div class="file-container"><div class="file-header">&lt;file path="<span class="file-path-value">$1</span>"&gt;</div>'
