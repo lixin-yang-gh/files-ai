@@ -13,6 +13,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getLastOpenedFolder: () => ipcRenderer.invoke('store:getLastOpenedFolder'),
   saveLastOpenedFolder: (path) => ipcRenderer.invoke('store:saveLastOpenedFolder', path),
 
+  getSystemPrompt: () => ipcRenderer.invoke('store:getSystemPrompt'),
+  saveSystemPrompt: (value) => ipcRenderer.invoke('store:saveSystemPrompt', value),
+
   on: (channel, callback) => {
     ipcRenderer.on(channel, (_, ...args) => callback(...args));
   }

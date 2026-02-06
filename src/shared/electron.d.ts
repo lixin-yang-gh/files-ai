@@ -1,11 +1,12 @@
-export {};
+// src/shared/electron.d.ts
+export { };
 
 declare global {
   interface Window {
     electronAPI: {
       // Dialog operations
       openDirectory: () => Promise<string | null>;
-      
+
       // File system operations
       readDirectory: (path: string) => Promise<Array<{
         name: string;
@@ -13,21 +14,30 @@ declare global {
         isDirectory: boolean;
         isFile: boolean;
       }>>;
-      
+
       readFile: (path: string) => Promise<{
         content: string;
         path: string;
       }>;
-      
+
       getFileStats: (path: string) => Promise<{
         size: number;
         modified: Date;
         isDirectory: boolean;
         isFile: boolean;
       }>;
-      
+
+      writeFile: (path: string, content: string) => Promise<void>;
+
+      // Store operations
+      getLastOpenedFolder: () => Promise<string | undefined>;
+      saveLastOpenedFolder: (path: string) => Promise<{ success: true }>;
+
+      getSystemPrompt: () => Promise<string>;
+      saveSystemPrompt: (value: string) => Promise<{ success: true }>;
+
       // Events
-      on: (channel: string, callback: Function) => void;
+      on: (channel: string, callback: (...args: any[]) => void) => void;
     };
   }
 }

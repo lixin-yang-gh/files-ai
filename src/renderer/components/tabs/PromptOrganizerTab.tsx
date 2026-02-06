@@ -1,5 +1,5 @@
 // tabs/PromptOrganizerTab.tsx - UPDATED
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getErrorMessage, getRelativePath } from '../../../shared/utils';
 
 interface PromptOrganizerTabProps {
@@ -19,6 +19,57 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [referencedFilesContent, setReferencedFilesContent] = useState<string>('');
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
+  const [lastSaved, setLastSaved] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadSavedPrompt = async () => {
+      try {
+        const saved = await window.electronAPI.getSystemPrompt();
+        if (saved) {
+          setSystemPrompt(saved);
+        }
+      } catch (err) {
+        console.error('Failed to load system prompt:', err);
+      }
+    };
+
+    loadSavedPrompt();
+  }, []);
+
+
+  // Save system prompt when it changes (debounced)
+  const saveSystemPrompt = useCallback(async (value: string) => {
+    try {
+      await window.electronAPI.saveSystemPrompt(value);
+    } catch (err) {
+      console.error('Failed to save system prompt:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Skip save on initial empty value if you want
+      if (systemPrompt === '') return;
+
+      saveSystemPrompt(systemPrompt).then(() => {
+        setLastSaved(Date.now());
+      }).catch(err => {
+        console.error('Save failed:', err);
+      });
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [systemPrompt, saveSystemPrompt]);
+
+  // Then somewhere in UI:
+  {
+    lastSaved && (
+      <div style={{ fontSize: '11px', color: '#4ec9b0', marginTop: -4 }}>
+        Saved {new Date(lastSaved).toLocaleTimeString()}
+      </div>
+    )
+  }
+
 
   // Load file contents when selected files change
   useEffect(() => {
@@ -161,17 +212,24 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
           <div className="section-header">Configuration</div>
 
           <div className="prompt-input-group">
-            <label htmlFor="system-prompt">
-              System Prompt
-              <span className="required-marker">*</span>
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label htmlFor="system-prompt">System Prompt <span className="required-marker">*</span></label>
+              <button
+                className="toolbar-button"
+                onClick={() => saveSystemPrompt(systemPrompt)}
+                disabled={!systemPrompt.trim()}
+                style={{ fontSize: '12px', padding: '4px 10px' }}
+              >
+                Save Prompt
+              </button>
+            </div>
             <textarea
               id="system-prompt"
               className="prompt-textarea"
               placeholder="Define the AI assistant's role, behavior, and constraints..."
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
-              rows={3}
+              rows={5}
             />
             <div className="char-counter">
               {systemPrompt.length} characters

@@ -9,12 +9,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Define the store schema
 interface StoreSchema {
   lastOpenedFolder?: string;
+  systemPrompt?: string;
 }
 
 // Initialize electron-store
 const store = new Store<StoreSchema>({
   defaults: {
-    lastOpenedFolder: undefined
+    lastOpenedFolder: undefined,
+    systemPrompt: "",
   },
   name: 'app-settings'
 });
@@ -125,6 +127,15 @@ ipcMain.handle('store:getLastOpenedFolder', () => {
 
 ipcMain.handle('store:saveLastOpenedFolder', (_, folderPath: string) => {
   store.set('lastOpenedFolder', folderPath);
+  return { success: true };
+});
+
+ipcMain.handle('store:getSystemPrompt', () => {
+  return store.get('systemPrompt') || '';
+});
+
+ipcMain.handle('store:saveSystemPrompt', (_, value: string) => {
+  store.set('systemPrompt', value);
   return { success: true };
 });
 
