@@ -212,7 +212,7 @@
   background: #252526;
   border: 1px solid #333;
   border-radius: 6px;
-  padding: 16px;
+  padding: 12px;
   margin-bottom: 20px;
 }
 
@@ -220,7 +220,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
 }
 
 .generate-prompt-header h3 {

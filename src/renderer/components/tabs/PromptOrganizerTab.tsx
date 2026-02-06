@@ -34,14 +34,14 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
           try {
             const fileData = await window.electronAPI.readFile(filePath);
             const relativePath = "<project_root>" + getRelativePath(filePath, rootFolder).replace(/\\/g, '/');
-            
+
             const escapedContent = fileData.content
               .replace(/&/g, '&amp;')
               .replace(/</g, '&lt;')
               .replace(/>/g, '&gt;')
               .replace(/"/g, '&quot;')
               .replace(/'/g, '&apos;');
-            
+
             return `<file path="${relativePath}">\n${escapedContent}\n</file>`;
           } catch (error) {
             const relativePath = getRelativePath(filePath, rootFolder);
@@ -75,35 +75,35 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     }
 
     setGenerationStatus('generating');
-    
+
     try {
       // Build the structured prompt with Markdown headers and XML file tags
       const promptParts = [];
-      
+
       // Add System Prompt with Markdown header
       promptParts.push(`## System Prompt\n\n${systemPrompt.trim()}\n`);
-      
+
       // Add Task with Markdown header
       promptParts.push(`## Task\n\n${task.trim()}\n`);
-      
+
       // Add Issues with Markdown header (only if not empty)
       if (issues.trim()) {
         promptParts.push(`## Issues & Constraints\n\n${issues.trim()}\n`);
       }
-      
+
       // Add Referenced Files section with Markdown header
       if (referencedFilesContent.trim()) {
         promptParts.push(`## Referenced Files\n\n${referencedFilesContent}`);
       }
-      
+
       // Combine all parts
       const fullPrompt = promptParts.join('\n\n---\n\n');
-      
+
       // Copy to clipboard
       await navigator.clipboard.writeText(fullPrompt);
       setGenerationStatus('success');
       console.log('Generated Prompt (copied to clipboard):', fullPrompt);
-      
+
       // Show success message for 3 seconds
       setTimeout(() => {
         setGenerationStatus('idle');
@@ -119,20 +119,16 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
 
   return (
     <div className="tab-panel prompt-organizer">
-      <div className="prompt-organizer-tab">
-        {/* Generate Prompt Button at the top */}
-        <div className="generate-prompt-section">
-          <div className="generate-prompt-header">
-            <h3>Generate Prompt</h3>
-            <div className="status-indicator">
-              <span className={`status-dot ${isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'}`}></span>
-              <span>
-                {isLoadingFiles ? 'Loading...' :
-                 selectedFilePaths.length > 0 ? `${selectedFilePaths.length} files ready` : 'No files selected'}
-              </span>
-            </div>
+      {/* Generate Prompt Button at the top */}
+      <div className="generate-prompt-section">
+        <div className="generate-prompt-header">
+          <div className="status-indicator">
+            <span className={`status-dot ${isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'}`}></span>
+            <span>
+              {isLoadingFiles ? 'Loading...' :
+                selectedFilePaths.length > 0 ? `${selectedFilePaths.length} files ready` : 'No files selected'}
+            </span>
           </div>
-          
           <button
             className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${generationStatus === 'success' ? 'success' : ''}`}
             onClick={handleGeneratePrompt}
@@ -140,29 +136,30 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
             title={!canGeneratePrompt ? "Fill in System Prompt, Task, and select at least one file" : "Generate and copy prompt to clipboard"}
           >
             {generationStatus === 'generating' ? 'Generating...' :
-             generationStatus === 'success' ? '✓ Copied to Clipboard!' :
-             'Generate Prompt'}
+              generationStatus === 'success' ? '✓ Copied to Clipboard!' :
+                'Generate Prompt'}
           </button>
-          
-          {generationStatus === 'success' && (
-            <div className="alert-message alert-success">
-              <span>✓</span>
-              <span>Prompt generated and copied to clipboard!</span>
-            </div>
-          )}
-          
-          {generationStatus === 'error' && (
-            <div className="alert-message alert-error">
-              <span>⚠️</span>
-              <span>Failed to generate prompt. Please try again.</span>
-            </div>
-          )}
         </div>
 
+        {generationStatus === 'success' && (
+          <div className="alert-message alert-success">
+            <span>✓</span>
+            <span>Prompt generated and copied to clipboard!</span>
+          </div>
+        )}
+
+        {generationStatus === 'error' && (
+          <div className="alert-message alert-error">
+            <span>⚠️</span>
+            <span>Failed to generate prompt. Please try again.</span>
+          </div>
+        )}
+      </div>
+      <div className="prompt-organizer-tab">
         {/* Configuration Section */}
         <div className="prompt-input-section">
           <div className="section-header">Configuration</div>
-          
+
           <div className="prompt-input-group">
             <label htmlFor="system-prompt">
               System Prompt
