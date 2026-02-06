@@ -16,42 +16,36 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [systemPrompt, setSystemPrompt] = useState('');
   const [task, setTask] = useState('');
   const [issues, setIssues] = useState('');
-  const [referencedFilesContent, setReferencedFilesContent] = useState<string>('(empty)');
+  const [referencedFilesContent, setReferencedFilesContent] = useState<string>('');
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
-  const [viewMode, setViewMode] = useState<'raw' | 'formatted'>('raw');
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied'>('idle');
+  const [generationStatus, setGenerationStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
 
   // Load file contents when selected files change
   useEffect(() => {
     const loadFileContents = async () => {
       if (selectedFilePaths.length === 0) {
-        setReferencedFilesContent('(empty)');
+        setReferencedFilesContent('');
         return;
       }
 
       setIsLoadingFiles(true);
       try {
-
         const filePromises = selectedFilePaths.map(async (filePath) => {
           try {
             const fileData = await window.electronAPI.readFile(filePath);
-            const relativePath = "<project_root>"+getRelativePath(filePath, rootFolder).replace(/\\/g, '/');
-
-            // FIXED: Better XML escaping (unchanged)
-            const escapeXml = (text: string) => {
-              return text
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&apos;');
-            };
-
-            const escapedContent = escapeXml(fileData.content);
+            const relativePath = "<project_root>" + getRelativePath(filePath, rootFolder).replace(/\\/g, '/');
+            
+            const escapedContent = fileData.content
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&apos;');
+            
             return `<file path="${relativePath}">\n${escapedContent}\n</file>`;
           } catch (error) {
             const relativePath = getRelativePath(filePath, rootFolder);
-            return `<file path="${relativePath}">\nError loading filrMessage(error)}_APPEND_TEST\n</file>`;
+            return `<file path="${relativePath}">\nError loading file: ${getErrorMessage(error)}\n</file>`;
           }
         });
 
@@ -69,73 +63,106 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     loadFileContents();
   }, [selectedFilePaths, rootFolder]);
 
-  const formatReferencedFiles = (content: string): string => {
-    if (viewMode === 'raw') return content;
-
-    try {
-      let formatted = content;
-
-      formatted = formatted.replace(
-        /<file path="([^"]+)">/g,
-        '<div class="file-container"><div class="file-header">&lt;file path="<span class="file-path-value">$1</span>"&gt;</div>'
-      );
-
-      // Format closing tags
-      formatted = formatted.replace(
-        /<\/file>/g,
-        '<div class="file-footer">&lt;/file&gt;</div></div>'
-      );
-
-      // Format content inside files
-      formatted = formatted.replace(
-        /([^<]+)(?=<\/file>)/g,
-        '<div class="file-content">$1</div>'
-      );
-
-      return formatted;
-    } catch (error) {
-      console.error('Error formatting content:', error);
-      return content;
-    }
-  };
-
-  const handleCopyToClipboard = async () => {
-    if (!referencedFilesContent) return;
-
-    setCopyStatus('copying');
-    try {
-      await navigator.clipboard.writeText(referencedFilesContent);
-      setCopyStatus('copied');
-      setTimeout(() => setCopyStatus('idle'), 2000);
-    } catch (error) {
-      console.error('Failed to copy:', error);
-      setCopyStatus('idle');
-    }
-  };
-
   const handleClearAll = () => {
     setSystemPrompt('');
     setTask('');
     setIssues('');
   };
 
-  const handleGeneratePrompt = () => {
-    const fullPrompt = `System Prompt:\n${systemPrompt}\n\nTask:\n${task}\n\nIssues:\n${issues}\n\nReferenced Files:\n${referencedFilesContent}`;
-    console.log('Generated Prompt:', fullPrompt);
-    // You can implement additional logic here, like sending to an API
+  const handleGeneratePrompt = async () => {
+    if (!systemPrompt.trim() || !task.trim() || selectedFilePaths.length === 0) {
+      return;
+    }
 
-    // Also copy to clipboard automatically
-    navigator.clipboard.writeText(fullPrompt).catch(console.error);
+    setGenerationStatus('generating');
+    
+    try {
+      // Build the structured prompt with Markdown headers and XML file tags
+      const promptParts = [];
+      
+      // Add System Prompt with Markdown header
+      promptParts.push(`## System Prompt\n\n${systemPrompt.trim()}\n`);
+      
+      // Add Task with Markdown header
+      promptParts.push(`## Task\n\n${task.trim()}\n`);
+      
+      // Add Issues with Markdown header (only if not empty)
+      if (issues.trim()) {
+        promptParts.push(`## Issues & Constraints\n\n${issues.trim()}\n`);
+      }
+      
+      // Add Referenced Files section with Markdown header
+      if (referencedFilesContent.trim()) {
+        promptParts.push(`## Referenced Files\n\n${referencedFilesContent}`);
+      }
+      
+      // Combine all parts
+      const fullPrompt = promptParts.join('\n\n---\n\n');
+      
+      // Copy to clipboard
+      await navigator.clipboard.writeText(fullPrompt);
+      setGenerationStatus('success');
+      console.log('Generated Prompt (copied to clipboard):', fullPrompt);
+      
+      // Show success message for 3 seconds
+      setTimeout(() => {
+        setGenerationStatus('idle');
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to generate prompt:', error);
+      setGenerationStatus('error');
+    }
   };
 
-  const formattedContent = formatReferencedFiles(referencedFilesContent);
+  // Calculate if Generate Prompt button should be enabled
+  const canGeneratePrompt = systemPrompt.trim() && task.trim() && selectedFilePaths.length > 0;
 
   return (
     <div className="tab-panel prompt-organizer">
       <div className="prompt-organizer-tab">
-        <div className="prompt-input-section">
-          <div className="section-header">Prompt Configuration</div>
+        {/* Generate Prompt Button at the top */}
+        <div className="generate-prompt-section">
+          <div className="generate-prompt-header">
+            <h3>Generate Prompt</h3>
+            <div className="status-indicator">
+              <span className={`status-dot ${isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'}`}></span>
+              <span>
+                {isLoadingFiles ? 'Loading...' :
+                 selectedFilePaths.length > 0 ? `${selectedFilePaths.length} files ready` : 'No files selected'}
+              </span>
+            </div>
+          </div>
+          
+          <button
+            className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${generationStatus === 'success' ? 'success' : ''}`}
+            onClick={handleGeneratePrompt}
+            disabled={!canGeneratePrompt || generationStatus === 'generating'}
+            title={!canGeneratePrompt ? "Fill in System Prompt, Task, and select at least one file" : "Generate and copy prompt to clipboard"}
+          >
+            {generationStatus === 'generating' ? 'Generating...' :
+             generationStatus === 'success' ? '✓ Copied to Clipboard!' :
+             'Generate Prompt'}
+          </button>
+          
+          {generationStatus === 'success' && (
+            <div className="alert-message alert-success">
+              <span>✓</span>
+              <span>Prompt generated and copied to clipboard!</span>
+            </div>
+          )}
+          
+          {generationStatus === 'error' && (
+            <div className="alert-message alert-error">
+              <span>⚠️</span>
+              <span>Failed to generate prompt. Please try again.</span>
+            </div>
+          )}
+        </div>
 
+        {/* Configuration Section */}
+        <div className="prompt-input-section">
+          <div className="section-header">Configuration</div>
+          
           <div className="prompt-input-group">
             <label htmlFor="system-prompt">
               System Prompt
@@ -144,10 +171,10 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
             <textarea
               id="system-prompt"
               className="prompt-textarea"
-              placeholder="Enter the system prompt for the AI assistant..."
+              placeholder="Define the AI assistant's role, behavior, and constraints..."
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
-              rows={4}
+              rows={3}
             />
             <div className="char-counter">
               {systemPrompt.length} characters
@@ -162,10 +189,10 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
             <textarea
               id="task"
               className="prompt-textarea"
-              placeholder="Describe the task you want the AI to perform..."
+              placeholder="Describe the specific task or objective..."
               value={task}
               onChange={(e) => setTask(e.target.value)}
-              rows={4}
+              rows={3}
             />
             <div className="char-counter">
               {task.length} characters
@@ -173,14 +200,14 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
           </div>
 
           <div className="prompt-input-group">
-            <label htmlFor="issues">Issues</label>
+            <label htmlFor="issues">Issues & Constraints (Optional)</label>
             <textarea
               id="issues"
               className="prompt-textarea issues-textarea"
-              placeholder="List any issues, constraints, or special requirements..."
+              placeholder="List any known issues, special requirements, or constraints..."
               value={issues}
               onChange={(e) => setIssues(e.target.value)}
-              rows={3}
+              rows={2}
             />
             <div className="char-counter">
               {issues.length} characters
@@ -188,56 +215,20 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
           </div>
         </div>
 
+        {/* Referenced Files Display */}
         <div className="referenced-files-section">
           <div className="referenced-files-header">
             <h4>Referenced Files ({selectedFilePaths.length})</h4>
-            <div className="status-indicator">
-              <span className={`status-dot ${isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'}`}></span>
-              <span>
-                {isLoadingFiles ? 'Loading...' :
-                  selectedFilePaths.length > 0 ? 'Ready' : 'No files'}
-              </span>
-            </div>
+            <button
+              className="toolbar-button"
+              onClick={onBackToOverview}
+              title="Go back to file selection"
+            >
+              ← Back to Files
+            </button>
           </div>
 
           <div className="referenced-files-display">
-            <div className="referenced-files-toolbar">
-              <div className="view-mode-selector">
-                <button
-                  className={`view-mode-button ${viewMode === 'raw' ? 'active' : ''}`}
-                  onClick={() => setViewMode('raw')}
-                >
-                  Raw
-                </button>
-                <button
-                  className={`view-mode-button ${viewMode === 'formatted' ? 'active' : ''}`}
-                  onClick={() => setViewMode('formatted')}
-                >
-                  Formatted
-                </button>
-              </div>
-
-              <div className="referenced-files-toolbar-actions">
-                <button
-                  className="toolbar-button"
-                  onClick={onBackToOverview}
-                  title="Go back to file selection"
-                >
-                  ← Back to Files
-                </button>
-
-                <button
-                  className={`toolbar-button copy-button ${copyStatus === 'copied' ? 'copied' : ''}`}
-                  onClick={handleCopyToClipboard}
-                  disabled={!referencedFilesContent || copyStatus === 'copying' || copyStatus === 'copied'}
-                  title="Copy referenced files to clipboard"
-                >
-                  {copyStatus === 'copying' ? 'Copying...' :
-                    copyStatus === 'copied' ? 'Copied!' : 'Copy Files'}
-                </button>
-              </div>
-            </div>
-
             <div className="referenced-files-content">
               {isLoadingFiles ? (
                 <div className="referenced-files-loading">
@@ -248,13 +239,8 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                 <div className="empty-referenced-files">
                   <div className="icon">📁</div>
                   <p>No files selected</p>
-                  <p>Select files in the Explorer to see them here</p>
+                  <p>Select files in the Explorer to include them in your prompt</p>
                 </div>
-              ) : viewMode === 'formatted' ? (
-                <div
-                  className="formatted-content"
-                  dangerouslySetInnerHTML={{ __html: formattedContent }}
-                />
               ) : (
                 <pre className="raw-content">{referencedFilesContent}</pre>
               )}
@@ -262,36 +248,23 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
           </div>
         </div>
 
+        {/* Clear All Button */}
         <div className="form-actions">
           <button
             className="action-button secondary-button"
             onClick={handleClearAll}
             disabled={!systemPrompt && !task && !issues}
           >
-            Clear All
-          </button>
-
-          <button
-            className="action-button primary-button"
-            onClick={handleGeneratePrompt}
-            disabled={!systemPrompt.trim() || !task.trim() || selectedFilePaths.length === 0}
-            title={selectedFilePaths.length === 0 ? "Select files first" : "Generate and copy complete prompt"}
-          >
-            Generate & Copy Complete Prompt
+            Clear All Fields
           </button>
         </div>
 
+        {/* Information Message */}
         <div className="alert-message alert-info">
-          <span>📄</span>
+          <span>💡</span>
           <span>
-            {selectedFilePaths.length > 0 ? (
-              <>
-                {selectedFilePaths.length} file{selectedFilePaths.length !== 1 ? 's' : ''} loaded.
-                Files are automatically updated when you select/deselect files.
-              </>
-            ) : (
-              "Select files in the Explorer to include them in your prompt."
-            )}
+            <strong>Prompt Structure:</strong> The generated prompt uses Markdown headers (##) for sections
+            and XML-like tags for file content. Files remain in &lt;file&gt; tags for better AI parsing.
           </span>
         </div>
       </div>
