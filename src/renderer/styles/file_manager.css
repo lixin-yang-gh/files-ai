@@ -342,7 +342,6 @@
 }
 
 .referenced-files-content {
-  max-height: 300px;
   overflow-y: auto;
   padding: 16px;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
