@@ -44,13 +44,16 @@
       "!dist/**/*.map"
     ],
     "mac": {
-      "category": "public.app-category.developer-tools"
+      "category": "public.app-category.developer-tools",
+      "icon": "assets/files-ai.icns"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "assets/files-ai.ico"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "icon": "assets/files-ai.png"
     }
   }
 }
