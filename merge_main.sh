@@ -1,3 +1,4 @@
+. push.sh
 git fetch
 git switch main
 git pull

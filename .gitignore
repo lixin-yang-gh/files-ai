@@ -2,10 +2,10 @@
 /node_modules
 .pnp.*
 .yarn-integrity
+files-ai.dmg
 
 # Production build artifacts
 /release
-/build
 /dist
 /out
 npm-debug.log*
