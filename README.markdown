@@ -1,9 +1,12 @@
-### This is an open-source app for referencing multiple files with relative paths and full file content to generate structured prompt for inference with large language models.
-- Suitable for inferencing with models offering large context length.
-- Each file reference carries both file path and full file content. The relative file paths provide a full picture of the file/folder hierarchy to the model, especially for complext coding and writing projects.
-- There is no recent plan to release a Linux binary. However the build instruction is very simple as indicated in package.json.
-- I am interested in introducing web search into the app to make the generated prompts include RAG like data. However I need to decide whether there is truly a need for doing it.
+### This is an open-source desktop app designed to help users reference multiple files — including their relative paths and full content — in order to generate well-structured prompts for large language models.
+
+- Especially well-suited for models that support very long context lengths.
+- Each referenced file includes both its relative path and complete content. Providing relative paths gives the model a clear understanding of the project’s file and folder hierarchy — particularly valuable for complex coding or writing projects.
+- There are currently no plans to release pre-built Linux binaries. However, building for Linux is straightforward — see the instructions in package.json.
+- I’m considering adding web search functionality to the app, which would allow the generated prompts to include RAG-like (retrieval-augmented) external information.
+Before proceeding, I’d like to better understand whether there is genuine demand for this feature.
 
 <img width="1626" height="1394" alt="image" src="https://github.com/user-attachments/assets/691cc27f-047d-4ee5-9cb8-52afb9da1eec" />
+
 
 
