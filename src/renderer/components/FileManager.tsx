@@ -146,7 +146,6 @@ const FileManager: React.FC<FileManagerProps> = ({
                 <OverviewTab
                   selectedFilePaths={selectedFilePaths}
                   rootFolder={rootFolder}
-                  onGoToPromptOrganizer={() => handleTabChange(1)}
                 />
               )}
 
@@ -157,6 +156,7 @@ const FileManager: React.FC<FileManagerProps> = ({
                   onBackToOverview={() => handleTabChange(0)}
                 />
               )}
+
 
               {activeTab === 2 && filePath && (
                 <FileEditorTab
