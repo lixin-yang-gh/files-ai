@@ -8,7 +8,8 @@
     "dev": "electron-vite dev",
     "preview": "electron-vite preview",
     "package:win": "npm run build && electron-builder --win",
-    "package:mac": "npm run build && electron-builder --mac",
+    "package:mac_app": "npm run build && electron-builder --mac",
+    "package:mac_dist": "electron-builder --mac",
     "package:linux": "npm run build && electron-builder --linux",
     "package": "npm run build && electron-builder"
   },
@@ -21,7 +22,7 @@
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
     "electron": "^40.1.0",
-    "electron-builder": "^26.6.0",
+    "electron-builder": "^26.7.0",
     "electron-vite": "^5.0.0",
     "fs-extra": "^11.1.0",
     "typescript": "^5.0.0",
@@ -44,8 +45,34 @@
       "!dist/**/*.map"
     ],
     "mac": {
-      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "icon": "assets/files-ai.icns"
+    },
+    "dmg": {
+      "title": "${name} ${version}",
+      "icon": "assets/files-ai.icns",
+      "contents": [
+        {
+          "x": 120,
+          "y": 200,
+          "type": "file",
+          "path": "release/mac-arm64/files-ai.app"
+        },
+        {
+          "x": 400,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "format": "UDZO"
     },
     "win": {
       "target": "nsis",
