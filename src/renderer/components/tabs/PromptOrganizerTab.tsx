@@ -122,7 +122,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       promptParts.push(`## Task\n\n${task.trim()}\n`);
 
       if (issues.trim()) {
-        const header = useErrorsLabel ? 'Errors' : 'Issues & Constraints';
+        const header = useErrorsLabel ? 'Errors' : 'Issues';
         promptParts.push(`## ${header}\n\n${issues.trim()}\n`);
       }
 
@@ -240,7 +240,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
 
           <div className="prompt-input-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label htmlFor="issues">Issues & Constraints (Optional)</label>
+              <label htmlFor="issues">Issues (Optional)</label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '13px' }}>
                 <input
                   type="checkbox"
@@ -253,7 +253,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
             <textarea
               id="issues"
               className="prompt-textarea issues-textarea"
-              placeholder="List any known issues, special requirements, or constraints..."
+              placeholder="List any known issues"
               value={issues}
               onChange={(e) => setIssues(e.target.value)}
               rows={2}
