@@ -320,3 +320,30 @@
     margin-left: 5px;
     vertical-align: middle;
 }
+
+
+/* Refresh button styling */
+.tree-header-actions .button.refreshing {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: #555;
+}
+
+/* Last refresh indicator */
+.last-refresh {
+  font-size: 10px;
+  color: #4ec9b0;
+  margin-left: 5px;
+}
+
+/* Auto-refresh badge */
+.auto-refresh-badge {
+  display: inline-block;
+  background: #4ec9b0;
+  color: #1e1e1e;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 5px;
+  font-weight: bold;
+}

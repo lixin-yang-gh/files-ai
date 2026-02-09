@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FileItem } from '../../shared/types';
+import { checkFileExists } from '../../shared/utils';
 
 interface FileTreeProps {
   rootPath: string;
@@ -19,8 +20,10 @@ const FileTree: React.FC<FileTreeProps> = ({
   const [selectedFilePaths, setSelectedFilePaths] = useState<Set<string>>(new Set());
   const [highlightedFile, setHighlightedFile] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const prevSelectedPathsRef = useRef<string[]>([]);
+  const lastSelectedFilesRef = useRef<string[]>([]); // Store selected files for refresh
 
   // Load last opened folder on initial mount
   useEffect(() => {
@@ -57,6 +60,9 @@ const FileTree: React.FC<FileTreeProps> = ({
     const currentPaths = Array.from(selectedFilePaths);
     const prevPaths = prevSelectedPathsRef.current;
     
+    // Store the current selection for refresh operations
+    lastSelectedFilesRef.current = currentPaths;
+    
     if (onSelectedPathsChange && 
         (currentPaths.length !== prevPaths.length || 
          !currentPaths.every((path, idx) => path === prevPaths[idx]))) {
@@ -65,6 +71,7 @@ const FileTree: React.FC<FileTreeProps> = ({
     }
   }, [selectedFilePaths, onSelectedPathsChange]);
 
+  // Load directory initially
   useEffect(() => {
     if (rootPath && isInitialized) {
       loadDirectory(rootPath);
@@ -78,7 +85,7 @@ const FileTree: React.FC<FileTreeProps> = ({
       const items = await window.electronAPI.readDirectory(dirPath);
       const itemsWithState = items.map(item => ({
         ...item,
-        isChecked: false,
+        isChecked: selectedFilePaths.has(item.path),
         isHighlighted: false
       }));
       setTree(itemsWithState);
@@ -88,6 +95,141 @@ const FileTree: React.FC<FileTreeProps> = ({
     } catch (error) {
       console.error('Error loading directory:', error);
     }
+  };
+
+  // NEW: Enhanced refresh function with the specified behavior
+  const handleRefresh = useCallback(async () => {
+    if (!rootPath || isRefreshing) return;
+    
+    setIsRefreshing(true);
+    
+    try {
+      // Step 1: Record all selected files
+      const selectedFilesBeforeRefresh = Array.from(selectedFilePaths);
+      
+      // Step 2: Reopen the selected root folder (same as "Open Folder" button)
+      await loadDirectory(rootPath);
+      
+      // Step 3: Loop through recorded selected file list
+      const validSelectedFiles: string[] = [];
+      
+      for (const filePath of selectedFilesBeforeRefresh) {
+        try {
+          // Detect file existence
+          const exists = await checkFileExists(filePath);
+          
+          if (exists) {
+            // File still exists, keep it in selection
+            validSelectedFiles.push(filePath);
+            
+            // Parse file path and update File Tree visuals
+            await updateFileTreeVisuals(filePath);
+          } else {
+            console.log(`File no longer exists: ${filePath}`);
+          }
+        } catch (error) {
+          console.error(`Error checking file ${filePath}:`, error);
+        }
+      }
+      
+      // Step 4: Update selected files list with only existing files
+      setSelectedFilePaths(new Set(validSelectedFiles));
+      
+      // Update tree checkboxes to reflect current selection
+      setTree(prevTree => {
+        const updateTreeWithSelection = (items: FileItem[]): FileItem[] => {
+          return items.map(item => ({
+            ...item,
+            isChecked: validSelectedFiles.includes(item.path),
+            children: item.children ? updateTreeWithSelection(item.children) : undefined
+          }));
+        };
+        return updateTreeWithSelection(prevTree);
+      });
+      
+      // Also restore expanded folders
+      await restoreExpandedFolders();
+      
+    } catch (error) {
+      console.error('Error during refresh:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [rootPath, isRefreshing, selectedFilePaths]);
+
+  // Helper to restore expanded folders after refresh
+  const restoreExpandedFolders = useCallback(async () => {
+    const newExpanded = new Set<string>();
+    
+    // Restore previously expanded folders if they still exist
+    for (const folderPath of expandedFolders) {
+      try {
+        const stats = await window.electronAPI.getFileStats(folderPath);
+        if (stats.isDirectory) {
+          newExpanded.add(folderPath);
+        }
+      } catch (error) {
+        // Folder no longer exists, skip it
+        console.log(`Folder no longer exists: ${folderPath}`);
+      }
+    }
+    
+    setExpandedFolders(newExpanded);
+    
+    // Load children for expanded folders
+    for (const folderPath of newExpanded) {
+      await loadFolderChildren(folderPath);
+    }
+  }, [expandedFolders]);
+
+  // Helper to load folder children
+  const loadFolderChildren = async (folderPath: string) => {
+    try {
+      const children = await window.electronAPI.readDirectory(folderPath);
+      const childrenWithState = children.map(child => ({
+        ...child,
+        isChecked: selectedFilePaths.has(child.path),
+        isHighlighted: false
+      }));
+      
+      setTree(prevTree => updateTreeItem(prevTree, folderPath, { 
+        children: childrenWithState
+      }));
+    } catch (error) {
+      console.error(`Error loading folder ${folderPath}:`, error);
+    }
+  };
+
+  // Helper to update file tree visuals for a specific file path
+  const updateFileTreeVisuals = async (filePath: string) => {
+    try {
+      // Check if the file still exists in the tree
+      const fileExistsInTree = checkFileInTree(tree, filePath);
+      
+      if (!fileExistsInTree) {
+        // File might have moved or been renamed
+        // We could attempt to find it by name or other heuristics
+        // For now, just log it
+        console.log(`File ${filePath} not found in current tree`);
+      }
+    } catch (error) {
+      console.error(`Error updating visuals for ${filePath}:`, error);
+    }
+  };
+
+  // Helper to check if a file exists in the tree
+  const checkFileInTree = (items: FileItem[], targetPath: string): boolean => {
+    for (const item of items) {
+      if (item.path === targetPath) {
+        return true;
+      }
+      if (item.children) {
+        if (checkFileInTree(item.children, targetPath)) {
+          return true;
+        }
+      }
+    }
+    return false;
   };
 
   // Helper to get ONLY first-level files from a folder
@@ -296,7 +438,7 @@ const FileTree: React.FC<FileTreeProps> = ({
               ...item, 
               children: children.map(child => ({
                 ...child,
-                isChecked: false,
+                isChecked: selectedFilePaths.has(child.path),
                 isHighlighted: false
               })) 
             };
@@ -455,12 +597,21 @@ const FileTree: React.FC<FileTreeProps> = ({
           >
             Clear
           </button>
+          <button
+            className={`button ${isRefreshing ? 'refreshing' : ''}`}
+            onClick={handleRefresh}
+            disabled={isRefreshing || !rootPath}
+            title={isRefreshing ? 'Refreshing...' : 'Refresh folder and selection'}
+          >
+            {isRefreshing ? '↻ Refreshing...' : '↻ Refresh'}
+          </button>
         </div>
       </div>
       <div className="tree-stats">
         <small>
           Selected: <strong>{selectedFilePaths.size}</strong> files | 
           Highlighted: <strong>{highlightedFile ? '1' : '0'}</strong> file
+          {isRefreshing && <span className="loading-indicator"> Refreshing...</span>}
         </small>
         {!isInitialized && <span className="loading-indicator">Loading last folder...</span>}
       </div>

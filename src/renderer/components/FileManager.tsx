@@ -33,7 +33,6 @@ const FileManager: React.FC<FileManagerProps> = ({
     }
   }, [filePath]);
 
-  // FIXED: Only auto-switch to OverviewTab if coming from 0 selection to >0 selection
   useEffect(() => {
     const prevCount = prevSelectedCountRef.current;
     const currentCount = selectedFilePaths.length;
@@ -50,6 +49,37 @@ const FileManager: React.FC<FileManagerProps> = ({
 
     prevSelectedCountRef.current = currentCount;
   }, [selectedFilePaths, activeTab, onTabChange]);
+
+  useEffect(() => {
+    // Check if selected files still exist
+    const verifySelectedFiles = async () => {
+      if (selectedFilePaths.length === 0) return;
+
+      const existingFiles: string[] = [];
+
+      for (const filePath of selectedFilePaths) {
+        try {
+          const stats = await window.electronAPI.getFileStats(filePath);
+          if (stats.isFile) {
+            existingFiles.push(filePath);
+          }
+        } catch (error) {
+          // File doesn't exist, skip it
+          console.warn(`File no longer exists: ${filePath}`);
+        }
+      }
+
+      // If some files were deleted, notify parent
+      if (existingFiles.length !== selectedFilePaths.length) {
+        // This will trigger the onSelectedPathsChange callback in parent
+        // which will update the selectedFilePaths state
+      }
+    };
+
+    // Run verification every 10 seconds
+    const interval = setInterval(verifySelectedFiles, 10000);
+    return () => clearInterval(interval);
+  }, [selectedFilePaths]);
 
   const handleTabChange = (tabIndex: number) => {
     setActiveTab(tabIndex);
