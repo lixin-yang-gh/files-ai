@@ -33,8 +33,11 @@ declare global {
       getLastOpenedFolder: () => Promise<string | undefined>;
       saveLastOpenedFolder: (path: string) => Promise<{ success: true }>;
 
+      // Prompt persistence operations
       getSystemPrompt: () => Promise<string>;
       saveSystemPrompt: (value: string) => Promise<{ success: true }>;
+      getTask: () => Promise<string>;
+      saveTask: (value: string) => Promise<{ success: true }>;
 
       // Events
       on: (channel: string, callback: (...args: any[]) => void) => void;

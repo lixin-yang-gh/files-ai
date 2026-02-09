@@ -1,4 +1,3 @@
-// tabs/PromptOrganizerTab.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { getErrorMessage, getRelativePath } from '../../../shared/utils';
 
@@ -16,30 +15,46 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [systemPrompt, setSystemPrompt] = useState('');
   const [task, setTask] = useState('');
   const [issues, setIssues] = useState('');
-  const [useErrorsLabel, setUseErrorsLabel] = useState(false); // ← new state
+  const [useErrorsLabel, setUseErrorsLabel] = useState(false);
   const [referencedFilesContent, setReferencedFilesContent] = useState<string>('');
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
-  const [lastSaved, setLastSaved] = useState<number | null>(null);
+  const [lastSavedSystemPrompt, setLastSavedSystemPrompt] = useState<number | null>(null);
+  const [lastSavedTask, setLastSavedTask] = useState<number | null>(null);
 
-  // Load saved system prompt once
+  // Load saved system prompt and task on component mount
   useEffect(() => {
-    const loadSavedPrompt = async () => {
+    const loadSavedData = async () => {
       try {
-        const saved = await window.electronAPI.getSystemPrompt();
-        if (saved) setSystemPrompt(saved);
+        // Load system prompt
+        const savedSystemPrompt = await window.electronAPI.getSystemPrompt();
+        if (savedSystemPrompt) setSystemPrompt(savedSystemPrompt);
+
+        // Load task
+        const savedTask = await window.electronAPI.getTask();
+        if (savedTask) setTask(savedTask);
       } catch (err) {
-        console.error('Failed to load system prompt:', err);
+        console.error('Failed to load saved data:', err);
       }
     };
-    loadSavedPrompt();
+    loadSavedData();
   }, []);
 
   const saveSystemPrompt = useCallback(async (value: string) => {
     try {
       await window.electronAPI.saveSystemPrompt(value);
+      setLastSavedSystemPrompt(Date.now());
     } catch (err) {
       console.error('Failed to save system prompt:', err);
+    }
+  }, []);
+
+  const saveTask = useCallback(async (value: string) => {
+    try {
+      await window.electronAPI.saveTask(value);
+      setLastSavedTask(Date.now());
+    } catch (err) {
+      console.error('Failed to save task:', err);
     }
   }, []);
 
@@ -47,12 +62,19 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   useEffect(() => {
     if (systemPrompt === '') return;
     const timer = setTimeout(() => {
-      saveSystemPrompt(systemPrompt).then(() => {
-        setLastSaved(Date.now());
-      });
+      saveSystemPrompt(systemPrompt);
     }, 800);
     return () => clearTimeout(timer);
   }, [systemPrompt, saveSystemPrompt]);
+
+  // Auto-save task (debounced)
+  useEffect(() => {
+    if (task === '') return;
+    const timer = setTimeout(() => {
+      saveTask(task);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [task, saveTask]);
 
   // Load / reload referenced files content
   const loadFileContents = useCallback(async () => {
@@ -105,9 +127,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const handleClearAll = () => {
     // Do NOT clear systemPrompt, task, issues — only reset other states if desired
     setGenerationStatus('idle');
-    // If you really want to clear task/issues too, uncomment:
-    // setTask('');
-    // setIssues('');
   };
 
   const handleGeneratePrompt = async () => {
@@ -153,31 +172,29 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         <div className="generate-prompt-header">
           <div className="status-indicator">
             <span
-              className={`status-dot ${
-                isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'
-              }`}
+              className={`status-dot ${isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'
+                }`}
             />
             <span>
               {isLoadingFiles
                 ? 'Loading...'
                 : selectedFilePaths.length > 0
-                ? `${selectedFilePaths.length} files ready`
-                : 'No files selected'}
+                  ? `${selectedFilePaths.length} files ready`
+                  : 'No files selected'}
             </span>
           </div>
 
           <button
-            className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${
-              generationStatus === 'success' ? 'success' : ''
-            }`}
+            className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${generationStatus === 'success' ? 'success' : ''
+              }`}
             onClick={handleGeneratePrompt}
             disabled={!canGeneratePrompt || generationStatus === 'generating'}
           >
             {generationStatus === 'generating'
               ? 'Generating...'
               : generationStatus === 'success'
-              ? '✓ Copied!'
-              : 'Generate Prompt'}
+                ? '✓ Copied!'
+                : 'Generate Prompt'}
           </button>
         </div>
 
@@ -216,17 +233,27 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               rows={5}
             />
             <div className="char-counter">{systemPrompt.length} characters</div>
-            {lastSaved && (
+            {lastSavedSystemPrompt && (
               <div style={{ fontSize: '11px', color: '#4ec9b0', marginTop: 2 }}>
-                Saved {new Date(lastSaved).toLocaleTimeString()}
+                Saved {new Date(lastSavedSystemPrompt).toLocaleTimeString()}
               </div>
             )}
           </div>
 
           <div className="prompt-input-group">
-            <label htmlFor="task">
-              Task <span className="required-marker">*</span>
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label htmlFor="task">
+                Task <span className="required-marker">*</span>
+              </label>
+              <button
+                className="toolbar-button"
+                onClick={() => saveTask(task)}
+                disabled={!task.trim()}
+                style={{ fontSize: '12px', padding: '4px 10px' }}
+              >
+                Save
+              </button>
+            </div>
             <textarea
               id="task"
               className="prompt-textarea"
@@ -236,6 +263,11 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               rows={3}
             />
             <div className="char-counter">{task.length} characters</div>
+            {lastSavedTask && (
+              <div style={{ fontSize: '11px', color: '#4ec9b0', marginTop: 2 }}>
+                Saved {new Date(lastSavedTask).toLocaleTimeString()}
+              </div>
+            )}
           </div>
 
           <div className="prompt-input-group">
@@ -312,7 +344,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         <div className="alert-message alert-info">
           <span>💡</span>
           <span>
-            <strong>Prompt structure:</strong> Markdown headers + XML-style file tags. 
+            <strong>Prompt structure:</strong> Markdown headers + XML-style file tags.
             <code>&nbsp;</code> characters are replaced with normal spaces.
           </span>
         </div>
