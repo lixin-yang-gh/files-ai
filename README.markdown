@@ -9,17 +9,9 @@ Before proceeding, I’d like to better understand whether there is genuine dema
 --- 
 ## Using the app on MacOS
 
-The app installed from the downloaded .dmg file will be blocked by the MacOS by default. As I am not willing to pay for an Apple Developer Account in near term, please run the following comman to remove the quarantine against the app.
+The app installed from the downloaded .dmg file will be blocked by the MacOS by default. As I am not willing to pay for an Apple Developer Account in near term, please run the following command in your terminal window to remove the quarantine against the app.
 
 ```bash
 xattr -rd com.apple.quarantine /Applications/files-ai.app
 ```
-
----
-
-<img width="1626" height="1394" alt="image" src="https://github.com/user-attachments/assets/691cc27f-047d-4ee5-9cb8-52afb9da1eec" />
-
-
-
-
 
