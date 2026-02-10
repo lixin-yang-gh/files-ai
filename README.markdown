@@ -6,15 +6,19 @@
 - I’m considering adding web search functionality to the app, which would allow the generated prompts to include RAG-like (retrieval-augmented) external information.
 Before proceeding, I’d like to better understand whether there is genuine demand for this feature.
 
+--- 
 ## Using the app on MacOS
 
-The app from the downloaded .dmg file will be blocked by the MacOS by default. As I am not willing to pay for an Apple Developer Account in near term, please run the following comman to remove the quarantine against the app.
+The app installed from the downloaded .dmg file will be blocked by the MacOS by default. As I am not willing to pay for an Apple Developer Account in near term, please run the following comman to remove the quarantine against the app.
 
 ```bash
 xattr -rd com.apple.quarantine /Applications/files-ai.app
 ```
 
+---
+
 <img width="1626" height="1394" alt="image" src="https://github.com/user-attachments/assets/691cc27f-047d-4ee5-9cb8-52afb9da1eec" />
+
 
 
 
