@@ -53,7 +53,9 @@
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "icon": "assets/files-ai.icns"
+      "icon": "assets/files-ai.icns",
+      "identity": null,
+      "type": "distribution"
     },
     "dmg": {
       "title": "${name} ${version}",
