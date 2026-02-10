@@ -16,9 +16,11 @@
 .file-tree {
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;  /* Grow to fill sidebar, allow shrink if needed */
+    flex: 1 1 auto;
+    /* Grow to fill sidebar, allow shrink if needed */
     min-height: 0;
-    overflow: hidden;  /* Prevent overflow from children spilling out */
+    overflow: hidden;
+    /* Prevent overflow from children spilling out */
 }
 
 /* ─────────────────────────────────────────────
@@ -28,8 +30,10 @@
     padding: 10px 15px;
     border-bottom: 1px solid #1e1e1e;
     background: #252526;
-    flex-shrink: 0; /* Prevent header from shrinking */
-    height: 75px;
+    flex-shrink: 0;
+    /* Prevent header from shrinking */
+    height: 80px;
+    -webkit-app-region: drag;
 }
 
 .tree-header h3 {
@@ -37,8 +41,19 @@
     font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin: 0 0 10px 0;
+    margin: 5px 0 10px 0;
+    text-align: center;
     color: #cccccc;
+}
+
+.tree-header button,
+.tree-header input,
+.tree-header select,
+.tree-header a,
+.tree-header [role="button"],
+.tree-header .draggable-exclude {
+    /* ← add this class to anything clickable */
+    -webkit-app-region: no-drag !important;
 }
 
 .tree-header-actions {
@@ -100,14 +115,16 @@
 .tree-item {
     display: flex;
     align-items: center;
-    padding: 2px 15px; /* Reduced padding for more items */
+    padding: 2px 15px;
+    /* Reduced padding for more items */
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     user-select: none;
     transition: background 0.15s ease;
-    min-height: 24px; /* Consistent height */
+    min-height: 24px;
+    /* Consistent height */
 }
 
 .tree-item:hover {
@@ -124,7 +141,8 @@
     cursor: pointer;
     width: 14px;
     height: 14px;
-    accent-color: #0e639c; /* Modern browser support */
+    accent-color: #0e639c;
+    /* Modern browser support */
 }
 
 /* For better cross-browser checkbox */
@@ -164,7 +182,8 @@
     display: flex;
     align-items: center;
     flex: 1;
-    min-height: 24px; /* Match tree-item height */
+    min-height: 24px;
+    /* Match tree-item height */
     border-radius: 3px;
     transition: background-color 0.2s;
 }
@@ -182,16 +201,19 @@
 .file-icon {
     margin-right: 6px;
     font-size: 14px;
-    min-width: 16px; /* Prevent icon shift */
+    min-width: 16px;
+    /* Prevent icon shift */
     text-align: center;
 }
 
 .folder-icon {
-    color: #e2c08d; /* Warm color for folders */
+    color: #e2c08d;
+    /* Warm color for folders */
 }
 
 .file-icon {
-    color: #cccccc; /* Neutral for files */
+    color: #cccccc;
+    /* Neutral for files */
 }
 
 .item-name {
@@ -218,7 +240,8 @@
     border-bottom: 1px solid #1e1e1e;
     font-size: 11px;
     color: #888;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
+    /* Prevent shrinking */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -243,7 +266,8 @@
     background: #252526;
     font-size: 11px;
     color: #888;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
+    /* Prevent shrinking */
 }
 
 .current-path {
@@ -262,7 +286,8 @@
 .tree-children::before {
     content: '';
     position: absolute;
-    left: 15px;  /* Adjust this offset as needed to align better with icons/checkboxes (e.g., 15-30px) */
+    left: 15px;
+    /* Adjust this offset as needed to align better with icons/checkboxes (e.g., 15-30px) */
     top: 0;
     bottom: 0;
     width: 1px;
@@ -275,6 +300,7 @@
         opacity: 0;
         transform: translateY(-5px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -293,4 +319,31 @@
     border-radius: 10px;
     margin-left: 5px;
     vertical-align: middle;
+}
+
+
+/* Refresh button styling */
+.tree-header-actions .button.refreshing {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: #555;
+}
+
+/* Last refresh indicator */
+.last-refresh {
+  font-size: 10px;
+  color: #4ec9b0;
+  margin-left: 5px;
+}
+
+/* Auto-refresh badge */
+.auto-refresh-badge {
+  display: inline-block;
+  background: #4ec9b0;
+  color: #1e1e1e;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 5px;
+  font-weight: bold;
 }

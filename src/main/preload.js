@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSystemPrompt: () => ipcRenderer.invoke('store:getSystemPrompt'),
   saveSystemPrompt: (value) => ipcRenderer.invoke('store:saveSystemPrompt', value),
 
+  getTask: () => ipcRenderer.invoke('store:getTask'),
+  saveTask: (value) => ipcRenderer.invoke('store:saveTask', value),
+
   on: (channel, callback) => {
     ipcRenderer.on(channel, (_, ...args) => callback(...args));
   }

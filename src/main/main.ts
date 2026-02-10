@@ -10,6 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 interface StoreSchema {
   lastOpenedFolder?: string;
   systemPrompt?: string;
+  task?: string;
 }
 
 // Initialize electron-store
@@ -17,6 +18,7 @@ const store = new Store<StoreSchema>({
   defaults: {
     lastOpenedFolder: undefined,
     systemPrompt: "",
+    task: ''
   },
   name: 'app-settings'
 });
@@ -136,6 +138,15 @@ ipcMain.handle('store:getSystemPrompt', () => {
 
 ipcMain.handle('store:saveSystemPrompt', (_, value: string) => {
   store.set('systemPrompt', value);
+  return { success: true };
+});
+
+ipcMain.handle('store:getTask', () => {
+  return store.get('task') || '';
+});
+
+ipcMain.handle('store:saveTask', (_, value: string) => {
+  store.set('task', value);
   return { success: true };
 });
 

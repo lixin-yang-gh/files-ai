@@ -1,6 +1,9 @@
-// tabs/PromptOrganizerTab.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { getErrorMessage, getRelativePath } from '../../../shared/utils';
+import {
+  getErrorMessage,
+  getRelativePath,
+  sanitizeText,
+} from '../../../shared/utils';
 
 interface PromptOrganizerTabProps {
   selectedFilePaths: string[];
@@ -16,30 +19,46 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [systemPrompt, setSystemPrompt] = useState('');
   const [task, setTask] = useState('');
   const [issues, setIssues] = useState('');
-  const [useErrorsLabel, setUseErrorsLabel] = useState(false); // ← new state
+  const [useErrorsLabel, setUseErrorsLabel] = useState(false);
   const [referencedFilesContent, setReferencedFilesContent] = useState<string>('');
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
-  const [lastSaved, setLastSaved] = useState<number | null>(null);
+  const [lastSavedSystemPrompt, setLastSavedSystemPrompt] = useState<number | null>(null);
+  const [lastSavedTask, setLastSavedTask] = useState<number | null>(null);
 
-  // Load saved system prompt once
+  // Load saved system prompt and task on component mount
   useEffect(() => {
-    const loadSavedPrompt = async () => {
+    const loadSavedData = async () => {
       try {
-        const saved = await window.electronAPI.getSystemPrompt();
-        if (saved) setSystemPrompt(saved);
+        // Load system prompt
+        const savedSystemPrompt = await window.electronAPI.getSystemPrompt();
+        if (savedSystemPrompt) setSystemPrompt(savedSystemPrompt);
+
+        // Load task
+        const savedTask = await window.electronAPI.getTask();
+        if (savedTask) setTask(savedTask);
       } catch (err) {
-        console.error('Failed to load system prompt:', err);
+        console.error('Failed to load saved data:', err);
       }
     };
-    loadSavedPrompt();
+    loadSavedData();
   }, []);
 
   const saveSystemPrompt = useCallback(async (value: string) => {
     try {
       await window.electronAPI.saveSystemPrompt(value);
+      setLastSavedSystemPrompt(Date.now());
     } catch (err) {
       console.error('Failed to save system prompt:', err);
+    }
+  }, []);
+
+  const saveTask = useCallback(async (value: string) => {
+    try {
+      await window.electronAPI.saveTask(value);
+      setLastSavedTask(Date.now());
+    } catch (err) {
+      console.error('Failed to save task:', err);
     }
   }, []);
 
@@ -47,12 +66,19 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   useEffect(() => {
     if (systemPrompt === '') return;
     const timer = setTimeout(() => {
-      saveSystemPrompt(systemPrompt).then(() => {
-        setLastSaved(Date.now());
-      });
+      saveSystemPrompt(systemPrompt);
     }, 800);
     return () => clearTimeout(timer);
   }, [systemPrompt, saveSystemPrompt]);
+
+  // Auto-save task (debounced)
+  useEffect(() => {
+    if (task === '') return;
+    const timer = setTimeout(() => {
+      saveTask(task);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [task, saveTask]);
 
   // Load / reload referenced files content
   const loadFileContents = useCallback(async () => {
@@ -69,15 +95,10 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
           const relativePath =
             "<project_root>" + getRelativePath(filePath, rootFolder).replace(/\\/g, '/');
 
-          // Escape only XML-special characters — do NOT escape spaces or newlines
-          const escapedContent = fileData.content
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&apos;');
+          // Apply sanitization to file content - this will decode HTML entities
+          const sanitizedContent = sanitizeText(fileData.content);
 
-          return `<file path="${relativePath}">\n${escapedContent}\n</file>`;
+          return `<file path="${relativePath}">\n${sanitizedContent}\n</file>`;
         } catch (error) {
           const relativePath = getRelativePath(filePath, rootFolder);
           return `<file path="${relativePath}">\nError loading file: ${getErrorMessage(error)}\n</file>`;
@@ -85,7 +106,11 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       });
 
       const fileContents = await Promise.all(filePromises);
-      setReferencedFilesContent(fileContents.join('\n\n'));
+      
+      // Combine all file contents
+      const combinedContent = fileContents.join('\n\n');
+      
+      setReferencedFilesContent(combinedContent);
     } catch (error) {
       console.error('Error loading files:', error);
       setReferencedFilesContent(`Error loading files: ${getErrorMessage(error)}`);
@@ -105,9 +130,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const handleClearAll = () => {
     // Do NOT clear systemPrompt, task, issues — only reset other states if desired
     setGenerationStatus('idle');
-    // If you really want to clear task/issues too, uncomment:
-    // setTask('');
-    // setIssues('');
   };
 
   const handleGeneratePrompt = async () => {
@@ -118,12 +140,17 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     try {
       const promptParts = [];
 
-      promptParts.push(`## System Prompt\n\n${systemPrompt.trim()}\n`);
-      promptParts.push(`## Task\n\n${task.trim()}\n`);
+      // Apply sanitization to all text inputs
+      const sanitizedSystemPrompt = sanitizeText(systemPrompt.trim());
+      const sanitizedTask = sanitizeText(task.trim());
+      const sanitizedIssues = issues.trim() ? sanitizeText(issues.trim()) : '';
 
-      if (issues.trim()) {
-        const header = useErrorsLabel ? 'Errors' : 'Issues & Constraints';
-        promptParts.push(`## ${header}\n\n${issues.trim()}\n`);
+      promptParts.push(`## System Prompt\n\n${sanitizedSystemPrompt}\n`);
+      promptParts.push(`## Task\n\n${sanitizedTask}\n`);
+
+      if (sanitizedIssues) {
+        const header = useErrorsLabel ? 'Errors' : 'Issues';
+        promptParts.push(`## ${header}\n\n${sanitizedIssues}\n`);
       }
 
       if (referencedFilesContent.trim()) {
@@ -131,9 +158,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       }
 
       let fullPrompt = promptParts.join('\n\n---\n\n');
-
-      // Replace &nbsp; with normal space (very common when copying from web editors)
-      fullPrompt = fullPrompt.replace(/\u00A0/g, ' ');
 
       await navigator.clipboard.writeText(fullPrompt);
       setGenerationStatus('success');
@@ -216,17 +240,27 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               rows={5}
             />
             <div className="char-counter">{systemPrompt.length} characters</div>
-            {lastSaved && (
+            {lastSavedSystemPrompt && (
               <div style={{ fontSize: '11px', color: '#4ec9b0', marginTop: 2 }}>
-                Saved {new Date(lastSaved).toLocaleTimeString()}
+                Saved {new Date(lastSavedSystemPrompt).toLocaleTimeString()}
               </div>
             )}
           </div>
 
           <div className="prompt-input-group">
-            <label htmlFor="task">
-              Task <span className="required-marker">*</span>
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label htmlFor="task">
+                Task <span className="required-marker">*</span>
+              </label>
+              <button
+                className="toolbar-button"
+                onClick={() => saveTask(task)}
+                disabled={!task.trim()}
+                style={{ fontSize: '12px', padding: '4px 10px' }}
+              >
+                Save
+              </button>
+            </div>
             <textarea
               id="task"
               className="prompt-textarea"
@@ -236,11 +270,16 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               rows={3}
             />
             <div className="char-counter">{task.length} characters</div>
+            {lastSavedTask && (
+              <div style={{ fontSize: '11px', color: '#4ec9b0', marginTop: 2 }}>
+                Saved {new Date(lastSavedTask).toLocaleTimeString()}
+              </div>
+            )}
           </div>
 
           <div className="prompt-input-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label htmlFor="issues">Issues & Constraints (Optional)</label>
+              <label htmlFor="issues">Issues (Optional)</label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '13px' }}>
                 <input
                   type="checkbox"
@@ -253,7 +292,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
             <textarea
               id="issues"
               className="prompt-textarea issues-textarea"
-              placeholder="List any known issues, special requirements, or constraints..."
+              placeholder="List any known issues"
               value={issues}
               onChange={(e) => setIssues(e.target.value)}
               rows={2}
@@ -312,8 +351,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         <div className="alert-message alert-info">
           <span>💡</span>
           <span>
-            <strong>Prompt structure:</strong> Markdown headers + XML-style file tags. 
-            <code>&nbsp;</code> characters are replaced with normal spaces.
+            <strong>Content sanitization applied:</strong> HTML entities decoded.
           </span>
         </div>
       </div>
