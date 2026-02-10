@@ -43,6 +43,12 @@ export async function filterExistingFiles(filePaths: string[]): Promise<string[]
       return exists ? path : null;
     })
   );
-  
+
   return results.filter((path): path is string => path !== null);
 }
+
+// Re-export sanitization functions from sanitize.ts
+export {
+  decodeHtmlEntities,
+  sanitizeText,
+} from './sanitize';

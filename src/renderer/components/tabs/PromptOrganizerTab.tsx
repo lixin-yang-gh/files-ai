@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getErrorMessage, getRelativePath } from '../../../shared/utils';
+import {
+  getErrorMessage,
+  getRelativePath,
+  sanitizeText,
+} from '../../../shared/utils';
 
 interface PromptOrganizerTabProps {
   selectedFilePaths: string[];
@@ -91,15 +95,10 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
           const relativePath =
             "<project_root>" + getRelativePath(filePath, rootFolder).replace(/\\/g, '/');
 
-          // Escape only XML-special characters — do NOT escape spaces or newlines
-          const escapedContent = fileData.content
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&apos;');
+          // Apply sanitization to file content - this will decode HTML entities
+          const sanitizedContent = sanitizeText(fileData.content);
 
-          return `<file path="${relativePath}">\n${escapedContent}\n</file>`;
+          return `<file path="${relativePath}">\n${sanitizedContent}\n</file>`;
         } catch (error) {
           const relativePath = getRelativePath(filePath, rootFolder);
           return `<file path="${relativePath}">\nError loading file: ${getErrorMessage(error)}\n</file>`;
@@ -107,7 +106,11 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       });
 
       const fileContents = await Promise.all(filePromises);
-      setReferencedFilesContent(fileContents.join('\n\n'));
+      
+      // Combine all file contents
+      const combinedContent = fileContents.join('\n\n');
+      
+      setReferencedFilesContent(combinedContent);
     } catch (error) {
       console.error('Error loading files:', error);
       setReferencedFilesContent(`Error loading files: ${getErrorMessage(error)}`);
@@ -137,12 +140,17 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     try {
       const promptParts = [];
 
-      promptParts.push(`## System Prompt\n\n${systemPrompt.trim()}\n`);
-      promptParts.push(`## Task\n\n${task.trim()}\n`);
+      // Apply sanitization to all text inputs
+      const sanitizedSystemPrompt = sanitizeText(systemPrompt.trim());
+      const sanitizedTask = sanitizeText(task.trim());
+      const sanitizedIssues = issues.trim() ? sanitizeText(issues.trim()) : '';
 
-      if (issues.trim()) {
+      promptParts.push(`## System Prompt\n\n${sanitizedSystemPrompt}\n`);
+      promptParts.push(`## Task\n\n${sanitizedTask}\n`);
+
+      if (sanitizedIssues) {
         const header = useErrorsLabel ? 'Errors' : 'Issues';
-        promptParts.push(`## ${header}\n\n${issues.trim()}\n`);
+        promptParts.push(`## ${header}\n\n${sanitizedIssues}\n`);
       }
 
       if (referencedFilesContent.trim()) {
@@ -150,9 +158,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       }
 
       let fullPrompt = promptParts.join('\n\n---\n\n');
-
-      // Replace &nbsp; with normal space (very common when copying from web editors)
-      fullPrompt = fullPrompt.replace(/\u00A0/g, ' ');
 
       await navigator.clipboard.writeText(fullPrompt);
       setGenerationStatus('success');
@@ -172,29 +177,31 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         <div className="generate-prompt-header">
           <div className="status-indicator">
             <span
-              className={`status-dot ${isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'
-                }`}
+              className={`status-dot ${
+                isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'
+              }`}
             />
             <span>
               {isLoadingFiles
                 ? 'Loading...'
                 : selectedFilePaths.length > 0
-                  ? `${selectedFilePaths.length} files ready`
-                  : 'No files selected'}
+                ? `${selectedFilePaths.length} files ready`
+                : 'No files selected'}
             </span>
           </div>
 
           <button
-            className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${generationStatus === 'success' ? 'success' : ''
-              }`}
+            className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${
+              generationStatus === 'success' ? 'success' : ''
+            }`}
             onClick={handleGeneratePrompt}
             disabled={!canGeneratePrompt || generationStatus === 'generating'}
           >
             {generationStatus === 'generating'
               ? 'Generating...'
               : generationStatus === 'success'
-                ? '✓ Copied!'
-                : 'Generate Prompt'}
+              ? '✓ Copied!'
+              : 'Generate Prompt'}
           </button>
         </div>
 
@@ -344,8 +351,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         <div className="alert-message alert-info">
           <span>💡</span>
           <span>
-            <strong>Prompt structure:</strong> Markdown headers + XML-style file tags.
-            <code>&nbsp;</code> characters are replaced with normal spaces.
+            <strong>Content sanitization applied:</strong> HTML entities decoded.
           </span>
         </div>
       </div>
