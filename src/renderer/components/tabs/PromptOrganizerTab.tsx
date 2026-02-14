@@ -11,6 +11,19 @@ interface PromptOrganizerTabProps {
   onBackToOverview: () => void;
 }
 
+// Define prepend and append button configurations for scalability
+const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
+  { key: 'Propose a solution', value: 'Please propose a solution.' },
+  { key: 'Propose enhancements', value: 'Please propose enhancements.' },
+  { key: 'Propose improvements', value: 'Please propose improvements.' },
+  { key: 'Propose fixes', value: 'Please propose fixes.' },
+];
+
+const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
+  { key: 'Full files', value: 'Please print out full contents of all the updated files.' },
+  { key: 'Updated blocks', value: 'Please print out the added/updated/deleted blocks with proper operation markings (add, update and delete) and their locations in the files.' },
+];
+
 const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   selectedFilePaths,
   rootFolder,
@@ -130,6 +143,30 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const handleClearAll = () => {
     // Do NOT clear systemPrompt, task, issues — only reset other states if desired
     setGenerationStatus('idle');
+  };
+
+  // Handle prepend button click
+  const handlePrepend = (textToPrepend: string) => {
+    setTask(prevTask => {
+      // If task is empty, just set the prepended text
+      if (!prevTask.trim()) {
+        return textToPrepend;
+      }
+      // Otherwise, add the prepended text as a new line at the beginning
+      return `${textToPrepend}\n${prevTask}`;
+    });
+  };
+
+  // Handle append button click
+  const handleAppend = (textToAppend: string) => {
+    setTask(prevTask => {
+      // If task is empty, just set the appended text
+      if (!prevTask.trim()) {
+        return textToAppend;
+      }
+      // Otherwise, add the appended text as a new line at the end
+      return `${prevTask}\n${textToAppend}`;
+    });
   };
 
   const handleGeneratePrompt = async () => {
@@ -259,13 +296,44 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                 Save
               </button>
             </div>
+
+            {/* Prepended text buttons - First row */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+              {PREPEND_BUTTONS.map((button) => (
+                <button
+                  key={button.key}
+                  className="toolbar-button"
+                  onClick={() => handlePrepend(button.value)}
+                  title={`Prepend: ${button.value}`}
+                  style={{ fontSize: '12px', padding: '4px 10px' }}
+                >
+                  ⬆️ {button.key}
+                </button>
+              ))}
+            </div>
+
+            {/* Appended text buttons - Second row */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+              {APPEND_BUTTONS.map((button) => (
+                <button
+                  key={button.key}
+                  className="toolbar-button"
+                  onClick={() => handleAppend(button.value)}
+                  title={`Append: ${button.value}`}
+                  style={{ fontSize: '12px', padding: '4px 10px' }}
+                >
+                  ⬇️ {button.key}
+                </button>
+              ))}
+            </div>
+
             <textarea
               id="task"
               className="prompt-textarea"
               placeholder="Describe the specific task or objective..."
               value={task}
               onChange={(e) => setTask(e.target.value)}
-              rows={3}
+              rows={4}
             />
             <div className="char-counter">{task.length} characters</div>
             {lastSavedTask && (
