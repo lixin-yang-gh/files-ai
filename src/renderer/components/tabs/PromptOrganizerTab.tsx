@@ -106,10 +106,10 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       });
 
       const fileContents = await Promise.all(filePromises);
-      
+
       // Combine all file contents
       const combinedContent = fileContents.join('\n\n');
-      
+
       setReferencedFilesContent(combinedContent);
     } catch (error) {
       console.error('Error loading files:', error);
@@ -177,31 +177,29 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         <div className="generate-prompt-header">
           <div className="status-indicator">
             <span
-              className={`status-dot ${
-                isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'
-              }`}
+              className={`status-dot ${isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'
+                }`}
             />
             <span>
               {isLoadingFiles
                 ? 'Loading...'
                 : selectedFilePaths.length > 0
-                ? `${selectedFilePaths.length} files ready`
-                : 'No files selected'}
+                  ? `${selectedFilePaths.length} files ready`
+                  : 'No files selected'}
             </span>
           </div>
 
           <button
-            className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${
-              generationStatus === 'success' ? 'success' : ''
-            }`}
+            className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${generationStatus === 'success' ? 'success' : ''
+              }`}
             onClick={handleGeneratePrompt}
             disabled={!canGeneratePrompt || generationStatus === 'generating'}
           >
             {generationStatus === 'generating'
               ? 'Generating...'
               : generationStatus === 'success'
-              ? '✓ Copied!'
-              : 'Generate Prompt'}
+                ? '✓ Copied!'
+                : 'Generate Prompt'}
           </button>
         </div>
 
