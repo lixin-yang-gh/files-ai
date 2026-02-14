@@ -189,7 +189,7 @@
 }
 
 .prompt-input-group label::after {
-    content: ':';
+    content: '';
 }
 
 .required-marker {

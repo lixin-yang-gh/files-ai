@@ -13,9 +13,9 @@ interface PromptOrganizerTabProps {
 
 // Define prepend and append button configurations for scalability
 const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
-  { key: 'Propose a solution', value: 'Please propose a solution.' },
-  { key: 'Propose enhancements', value: 'Please propose enhancements.' },
-  { key: 'Propose improvements', value: 'Please propose improvements.' },
+  { key: 'Propose solution', value: 'Please propose the best solution for the following requirement.' },
+  { key: 'Propose enhancements', value: 'Please propose enhancement.' },
+  { key: 'Propose improvements', value: 'Please propose improvement.' },
   { key: 'Propose fixes', value: 'Please propose fixes.' },
 ];
 
@@ -25,11 +25,11 @@ const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
 ];
 
 const HEADER_OPTIONS: Array<{ display: string; value: string }> = [
-  { display: 'Issues', value: 'issues' },
-  { display: 'Feedback', value: 'feedback' },
-  { display: 'Third Party Proposal', value: 'third_party_proposal' },
-  { display: 'Logs', value: 'logs' },
-  { display: 'Errors', value: 'errors' },
+  { display: 'Issues', value: 'Issues' },
+  { display: 'Feedback', value: 'Feedback' },
+  { display: '3rd Party Proposal', value: 'Third Party Proposal' },
+  { display: 'Logs', value: 'Logs' },
+  { display: 'Errors', value: 'Errors' },
 ];
 
 const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
@@ -306,6 +306,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
             <textarea
               id="system-prompt"
               className="prompt-textarea"
+              style={{ minHeight: '40px' }}
               placeholder="Define the AI assistant's role, behavior, and constraints..."
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
