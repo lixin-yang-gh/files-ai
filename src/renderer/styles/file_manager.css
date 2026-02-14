@@ -294,7 +294,7 @@
 
 /* Issues textarea - slightly smaller */
 .issues-textarea {
-    min-height: 80px;
+    min-height: 200px;
 }
 
 /* Referenced files display */
