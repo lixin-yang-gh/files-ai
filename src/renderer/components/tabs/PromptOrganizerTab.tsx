@@ -16,6 +16,7 @@ const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
   { key: 'Propose solution', value: 'Please propose the best solution for the following requirement.' },
   { key: 'Propose enhancements', value: 'Please propose enhancement.' },
   { key: 'Propose improvements', value: 'Please propose improvement.' },
+  { key: 'Propose code changes', value: 'Please propose code changes.' },
   { key: 'Propose fixes', value: 'Please propose fixes.' },
 ];
 
