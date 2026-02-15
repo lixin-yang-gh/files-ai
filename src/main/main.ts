@@ -11,6 +11,7 @@ interface StoreSchema {
   lastOpenedFolder?: string;
   systemPrompt?: string;
   task?: string;
+  issues?: string;
   selectedHeader?: string;
 }
 
@@ -20,6 +21,7 @@ const store = new Store<StoreSchema>({
     lastOpenedFolder: undefined,
     systemPrompt: "",
     task: '',
+    issues: '',
     selectedHeader: 'issues'
   },
   name: 'app-settings'
@@ -158,6 +160,15 @@ ipcMain.handle('store:getSelectedHeader', () => {
 
 ipcMain.handle('store:saveSelectedHeader', (_, value: string) => {
   store.set('selectedHeader', value);
+  return { success: true };
+});
+
+ipcMain.handle('store:getIssues', () => {
+  return store.get('issues') || '';
+});
+
+ipcMain.handle('store:saveIssues', (_, value: string) => {
+  store.set('issues', value);
   return { success: true };
 });
 

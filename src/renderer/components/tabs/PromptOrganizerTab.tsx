@@ -25,11 +25,11 @@ const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
 ];
 
 const HEADER_OPTIONS: Array<{ display: string; value: string }> = [
-  { display: 'Issues', value: 'Issues' },
-  { display: 'Feedback', value: 'Feedback' },
-  { display: '3rd Party Proposal', value: 'Third Party Proposal' },
-  { display: 'Logs', value: 'Logs' },
-  { display: 'Errors', value: 'Errors' },
+  { display: 'Issues', value: 'issues' },
+  { display: 'Feedback', value: 'feedback' },
+  { display: '3rd Party Proposal', value: 'third_party_proposal' },
+  { display: 'Logs', value: 'logs' },
+  { display: 'Errors', value: 'errors' },
 ];
 
 const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
@@ -40,16 +40,16 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [systemPrompt, setSystemPrompt] = useState('');
   const [task, setTask] = useState('');
   const [issues, setIssues] = useState('');
-  const [useErrorsLabel, setUseErrorsLabel] = useState(false);
   const [selectedHeader, setSelectedHeader] = useState('issues');
   const [referencedFilesContent, setReferencedFilesContent] = useState<string>('');
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
   const [lastSavedSystemPrompt, setLastSavedSystemPrompt] = useState<number | null>(null);
   const [lastSavedTask, setLastSavedTask] = useState<number | null>(null);
+  const [lastSavedIssues, setLastSavedIssues] = useState<number | null>(null); // Add this
   const [lastSavedHeader, setLastSavedHeader] = useState<number | null>(null);
 
-  // Load saved system prompt and task on component mount
+  // Load saved data on component mount
   useEffect(() => {
     const loadSavedData = async () => {
       try {
@@ -60,6 +60,10 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         // Load task
         const savedTask = await window.electronAPI.getTask();
         if (savedTask) setTask(savedTask);
+
+        // Load issues - NEW
+        const savedIssues = await window.electronAPI.getIssues();
+        if (savedIssues) setIssues(savedIssues);
 
         // Load header selection
         const savedHeader = await window.electronAPI.getSelectedHeader();
@@ -94,6 +98,16 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     }
   }, []);
 
+  // NEW: Save issues function
+  const saveIssues = useCallback(async (value: string) => {
+    try {
+      await window.electronAPI.saveIssues(value);
+      setLastSavedIssues(Date.now());
+    } catch (err) {
+      console.error('Failed to save issues:', err);
+    }
+  }, []);
+
   const saveHeader = useCallback(async (value: string) => {
     try {
       await window.electronAPI.saveSelectedHeader(value);
@@ -120,6 +134,15 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     }, 800);
     return () => clearTimeout(timer);
   }, [task, saveTask]);
+
+  // NEW: Auto-save issues (debounced)
+  useEffect(() => {
+    if (issues === '') return;
+    const timer = setTimeout(() => {
+      saveIssues(issues);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [issues, saveIssues]);
 
   // Auto-save header selection (debounced)
   useEffect(() => {
@@ -177,9 +200,18 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     loadFileContents();
   };
 
-  const handleClearAll = () => {
-    // Do NOT clear systemPrompt, task, issues — only reset other states if desired
-    setGenerationStatus('idle');
+  // NEW: Handle New Task button - clear Task textarea
+  const handleNewTask = () => {
+    setTask('');
+    // Optionally trigger save immediately
+    saveTask('');
+  };
+
+  // NEW: Handle Clear Issues button - clear Issues textarea
+  const handleClearIssues = () => {
+    setIssues('');
+    // Optionally trigger save immediately
+    saveIssues('');
   };
 
   // Handle prepend button click
@@ -325,14 +357,25 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               <label htmlFor="task">
                 Task <span className="required-marker">*</span>
               </label>
-              <button
-                className="toolbar-button"
-                onClick={() => saveTask(task)}
-                disabled={!task.trim()}
-                style={{ fontSize: '12px', padding: '4px 10px' }}
-              >
-                Save
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {/* NEW: New Task button */}
+                <button
+                  className="toolbar-button"
+                  onClick={handleNewTask}
+                  title="Clear task and start fresh"
+                  style={{ fontSize: '12px', padding: '4px 10px', backgroundColor: '#2a2d2e' }}
+                >
+                  New Task
+                </button>
+                <button
+                  className="toolbar-button"
+                  onClick={() => saveTask(task)}
+                  disabled={!task.trim()}
+                  style={{ fontSize: '12px', padding: '4px 10px' }}
+                >
+                  Save
+                </button>
+              </div>
             </div>
 
             {/* Prepended text buttons - First row */}
@@ -385,27 +428,49 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               <label htmlFor="issues">
                 {HEADER_OPTIONS.find(h => h.value === selectedHeader)?.display || 'Issues'} (Optional)
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '13px' }}>
-                <span style={{ color: '#888' }}>Section Header:</span>
-                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                  {HEADER_OPTIONS.map((option) => (
-                    <label key={option.value} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-                      <input
-                        type="radio"
-                        name="header-option"
-                        value={option.value}
-                        checked={selectedHeader === option.value}
-                        onChange={(e) => setSelectedHeader(e.target.value)}
-                        style={{ margin: 0, cursor: 'pointer' }}
-                      />
-                      <span style={{ color: selectedHeader === option.value ? '#ccaa00' : '#ccc' }}>
-                        {option.display}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {/* NEW: Clear Issues button */}
+                <button
+                  className="toolbar-button"
+                  onClick={handleClearIssues}
+                  title="Clear issues textarea"
+                  style={{ fontSize: '12px', padding: '4px 10px', backgroundColor: '#2a2d2e' }}
+                >
+                  Clear
+                </button>
+                <button
+                  className="toolbar-button"
+                  onClick={() => saveIssues(issues)}
+                  disabled={!issues.trim()}
+                  style={{ fontSize: '12px', padding: '4px 10px' }}
+                >
+                  Save
+                </button>
               </div>
             </div>
+
+            {/* Section Header Radio Buttons */}
+            <div style={{ marginBottom: '12px' }}>
+              <span style={{ color: '#888', fontSize: '13px', marginRight: '12px' }}>Section Header:</span>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: '8px' }}>
+                {HEADER_OPTIONS.map((option) => (
+                  <label key={option.value} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="header-option"
+                      value={option.value}
+                      checked={selectedHeader === option.value}
+                      onChange={(e) => setSelectedHeader(e.target.value)}
+                      style={{ margin: 0, cursor: 'pointer' }}
+                    />
+                    <span style={{ color: selectedHeader === option.value ? '#ccaa00' : '#ccc' }}>
+                      {option.display}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <textarea
               id="issues"
               className="prompt-textarea issues-textarea"
@@ -416,11 +481,18 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="char-counter">{issues.length} characters</div>
-              {lastSavedHeader && (
-                <div style={{ fontSize: '11px', color: '#4ec9b0' }}>
-                  Header preference saved {new Date(lastSavedHeader).toLocaleTimeString()}
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                {lastSavedIssues && (
+                  <div style={{ fontSize: '11px', color: '#4ec9b0' }}>
+                    Saved {new Date(lastSavedIssues).toLocaleTimeString()}
+                  </div>
+                )}
+                {lastSavedHeader && (
+                  <div style={{ fontSize: '11px', color: '#4ec9b0' }}>
+                    Header saved {new Date(lastSavedHeader).toLocaleTimeString()}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -465,7 +537,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         <div className="form-actions">
           <button
             className="action-button secondary-button"
-            onClick={handleClearAll}
+            onClick={() => setGenerationStatus('idle')}
             disabled={generationStatus === 'generating'}
           >
             Reset Status
