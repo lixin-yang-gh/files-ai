@@ -22,7 +22,7 @@ const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
 
 const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
   { key: 'Full files', value: 'Please print out full contents of all the updated files.' },
-  { key: 'Updated blocks', value: 'Please print out the added/updated/deleted blocks with block level (not each individual line) operation markings (add, update and delete) and their locations in the files.' },
+  { key: 'Updated blocks', value: 'Please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
 ];
 
 const HEADER_OPTIONS: Array<{ display: string; value: string }> = [
