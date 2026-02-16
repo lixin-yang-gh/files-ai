@@ -19,6 +19,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getTask: () => ipcRenderer.invoke('store:getTask'),
   saveTask: (value) => ipcRenderer.invoke('store:saveTask', value),
 
+  getSelectedHeader: () => ipcRenderer.invoke('store:getSelectedHeader'),
+  saveSelectedHeader: (value) => ipcRenderer.invoke('store:saveSelectedHeader', value),
+
+  getIssues: () => ipcRenderer.invoke('store:getIssues'),
+  saveIssues: (value) => ipcRenderer.invoke('store:saveIssues', value),
+
   on: (channel, callback) => {
     ipcRenderer.on(channel, (_, ...args) => callback(...args));
   }

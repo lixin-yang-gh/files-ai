@@ -3,6 +3,7 @@
 .pnp.*
 .yarn-integrity
 files-ai.dmg
+package-lock.json
 
 # Production build artifacts
 /release

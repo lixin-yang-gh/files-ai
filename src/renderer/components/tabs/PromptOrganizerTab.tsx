@@ -11,6 +11,28 @@ interface PromptOrganizerTabProps {
   onBackToOverview: () => void;
 }
 
+// Define prepend and append button configurations for scalability
+const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
+  { key: 'Propose solution', value: 'Please propose the best solution for the following requirement.' },
+  { key: 'Propose enhancements', value: 'Please propose enhancement.' },
+  { key: 'Propose improvements', value: 'Please propose improvement.' },
+  { key: 'Propose code changes', value: 'Please propose code changes.' },
+  { key: 'Propose fixes', value: 'Please propose fixes.' },
+];
+
+const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
+  { key: 'Full files', value: 'Please print out full contents of all the updated files.' },
+  { key: 'Updated blocks', value: 'Please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
+];
+
+const HEADER_OPTIONS: Array<{ display: string; value: string }> = [
+  { display: 'Issues', value: 'issues' },
+  { display: 'Feedback', value: 'feedback' },
+  { display: '3rd Party Proposal', value: 'third_party_proposal' },
+  { display: 'Logs', value: 'logs' },
+  { display: 'Errors', value: 'errors' },
+];
+
 const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   selectedFilePaths,
   rootFolder,
@@ -19,14 +41,16 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [systemPrompt, setSystemPrompt] = useState('');
   const [task, setTask] = useState('');
   const [issues, setIssues] = useState('');
-  const [useErrorsLabel, setUseErrorsLabel] = useState(false);
+  const [selectedHeader, setSelectedHeader] = useState('issues');
   const [referencedFilesContent, setReferencedFilesContent] = useState<string>('');
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
   const [lastSavedSystemPrompt, setLastSavedSystemPrompt] = useState<number | null>(null);
   const [lastSavedTask, setLastSavedTask] = useState<number | null>(null);
+  const [lastSavedIssues, setLastSavedIssues] = useState<number | null>(null); // Add this
+  const [lastSavedHeader, setLastSavedHeader] = useState<number | null>(null);
 
-  // Load saved system prompt and task on component mount
+  // Load saved data on component mount
   useEffect(() => {
     const loadSavedData = async () => {
       try {
@@ -37,6 +61,19 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         // Load task
         const savedTask = await window.electronAPI.getTask();
         if (savedTask) setTask(savedTask);
+
+        // Load issues - NEW
+        const savedIssues = await window.electronAPI.getIssues();
+        if (savedIssues) setIssues(savedIssues);
+
+        // Load header selection
+        const savedHeader = await window.electronAPI.getSelectedHeader();
+        if (savedHeader) {
+          setSelectedHeader(savedHeader);
+        } else {
+          // Default to 'issues' if nothing saved
+          setSelectedHeader('issues');
+        }
       } catch (err) {
         console.error('Failed to load saved data:', err);
       }
@@ -62,6 +99,25 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     }
   }, []);
 
+  // NEW: Save issues function
+  const saveIssues = useCallback(async (value: string) => {
+    try {
+      await window.electronAPI.saveIssues(value);
+      setLastSavedIssues(Date.now());
+    } catch (err) {
+      console.error('Failed to save issues:', err);
+    }
+  }, []);
+
+  const saveHeader = useCallback(async (value: string) => {
+    try {
+      await window.electronAPI.saveSelectedHeader(value);
+      setLastSavedHeader(Date.now());
+    } catch (err) {
+      console.error('Failed to save header selection:', err);
+    }
+  }, []);
+
   // Auto-save system prompt (debounced)
   useEffect(() => {
     if (systemPrompt === '') return;
@@ -79,6 +135,24 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     }, 800);
     return () => clearTimeout(timer);
   }, [task, saveTask]);
+
+  // NEW: Auto-save issues (debounced)
+  useEffect(() => {
+    if (issues === '') return;
+    const timer = setTimeout(() => {
+      saveIssues(issues);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [issues, saveIssues]);
+
+  // Auto-save header selection (debounced)
+  useEffect(() => {
+    if (!selectedHeader) return;
+    const timer = setTimeout(() => {
+      saveHeader(selectedHeader);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [selectedHeader, saveHeader]);
 
   // Load / reload referenced files content
   const loadFileContents = useCallback(async () => {
@@ -106,10 +180,10 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       });
 
       const fileContents = await Promise.all(filePromises);
-      
+
       // Combine all file contents
       const combinedContent = fileContents.join('\n\n');
-      
+
       setReferencedFilesContent(combinedContent);
     } catch (error) {
       console.error('Error loading files:', error);
@@ -127,9 +201,42 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     loadFileContents();
   };
 
-  const handleClearAll = () => {
-    // Do NOT clear systemPrompt, task, issues — only reset other states if desired
-    setGenerationStatus('idle');
+  // NEW: Handle New Task button - clear Task textarea
+  const handleNewTask = () => {
+    setTask('');
+    // Optionally trigger save immediately
+    saveTask('');
+  };
+
+  // NEW: Handle Clear Issues button - clear Issues textarea
+  const handleClearIssues = () => {
+    setIssues('');
+    // Optionally trigger save immediately
+    saveIssues('');
+  };
+
+  // Handle prepend button click
+  const handlePrepend = (textToPrepend: string) => {
+    setTask(prevTask => {
+      // If task is empty, just set the prepended text
+      if (!prevTask.trim()) {
+        return textToPrepend;
+      }
+      // Otherwise, add the prepended text as a new line at the beginning
+      return `${textToPrepend}\n${prevTask}`;
+    });
+  };
+
+  // Handle append button click
+  const handleAppend = (textToAppend: string) => {
+    setTask(prevTask => {
+      // If task is empty, just set the appended text
+      if (!prevTask.trim()) {
+        return textToAppend;
+      }
+      // Otherwise, add the appended text as a new line at the end
+      return `${prevTask}\n${textToAppend}`;
+    });
   };
 
   const handleGeneratePrompt = async () => {
@@ -149,8 +256,8 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       promptParts.push(`## Task\n\n${sanitizedTask}\n`);
 
       if (sanitizedIssues) {
-        const header = useErrorsLabel ? 'Errors' : 'Issues';
-        promptParts.push(`## ${header}\n\n${sanitizedIssues}\n`);
+        const displayHeader = HEADER_OPTIONS.find(h => h.value === selectedHeader)?.display || 'Issues';
+        promptParts.push(`## ${displayHeader}\n\n${sanitizedIssues}\n`);
       }
 
       if (referencedFilesContent.trim()) {
@@ -177,31 +284,29 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         <div className="generate-prompt-header">
           <div className="status-indicator">
             <span
-              className={`status-dot ${
-                isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'
-              }`}
+              className={`status-dot ${isLoadingFiles ? 'loading' : selectedFilePaths.length > 0 ? 'ready' : 'idle'
+                }`}
             />
             <span>
               {isLoadingFiles
                 ? 'Loading...'
                 : selectedFilePaths.length > 0
-                ? `${selectedFilePaths.length} files ready`
-                : 'No files selected'}
+                  ? `${selectedFilePaths.length} files ready`
+                  : 'No files selected'}
             </span>
           </div>
 
           <button
-            className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${
-              generationStatus === 'success' ? 'success' : ''
-            }`}
+            className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${generationStatus === 'success' ? 'success' : ''
+              }`}
             onClick={handleGeneratePrompt}
             disabled={!canGeneratePrompt || generationStatus === 'generating'}
           >
             {generationStatus === 'generating'
               ? 'Generating...'
               : generationStatus === 'success'
-              ? '✓ Copied!'
-              : 'Generate Prompt'}
+                ? '✓ Copied!'
+                : 'Generate Prompt'}
           </button>
         </div>
 
@@ -234,6 +339,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
             <textarea
               id="system-prompt"
               className="prompt-textarea"
+              style={{ minHeight: '40px' }}
               placeholder="Define the AI assistant's role, behavior, and constraints..."
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
@@ -252,14 +358,40 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               <label htmlFor="task">
                 Task <span className="required-marker">*</span>
               </label>
-              <button
-                className="toolbar-button"
-                onClick={() => saveTask(task)}
-                disabled={!task.trim()}
-                style={{ fontSize: '12px', padding: '4px 10px' }}
-              >
-                Save
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {/* NEW: New Task button */}
+                <button
+                  className="toolbar-button"
+                  onClick={handleNewTask}
+                  title="Clear task and start fresh"
+                  style={{ fontSize: '12px', padding: '4px 10px', backgroundColor: '#2a2d2e' }}
+                >
+                  New Task
+                </button>
+                <button
+                  className="toolbar-button"
+                  onClick={() => saveTask(task)}
+                  disabled={!task.trim()}
+                  style={{ fontSize: '12px', padding: '4px 10px' }}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+
+            {/* Prepended text buttons - First row */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
+              {PREPEND_BUTTONS.map((button) => (
+                <button
+                  key={button.key}
+                  className="toolbar-button"
+                  onClick={() => handlePrepend(button.value)}
+                  title={`Prepend: ${button.value}`}
+                  style={{ fontSize: '12px', padding: '4px 10px' }}
+                >
+                  ⬇️ {button.key}
+                </button>
+              ))}
             </div>
             <textarea
               id="task"
@@ -267,8 +399,23 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               placeholder="Describe the specific task or objective..."
               value={task}
               onChange={(e) => setTask(e.target.value)}
-              rows={3}
+              rows={4}
             />
+            {/* Appended text buttons - Second row */}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
+              {APPEND_BUTTONS.map((button) => (
+                <button
+                  key={button.key}
+                  className="toolbar-button"
+                  onClick={() => handleAppend(button.value)}
+                  title={`Append: ${button.value}`}
+                  style={{ fontSize: '12px', padding: '4px 10px' }}
+                >
+                  ⬆️ {button.key}
+                </button>
+              ))}
+            </div>
+
             <div className="char-counter">{task.length} characters</div>
             {lastSavedTask && (
               <div style={{ fontSize: '11px', color: '#4ec9b0', marginTop: 2 }}>
@@ -279,25 +426,75 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
 
           <div className="prompt-input-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label htmlFor="issues">Issues (Optional)</label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '13px' }}>
-                <input
-                  type="checkbox"
-                  checked={useErrorsLabel}
-                  onChange={(e) => setUseErrorsLabel(e.target.checked)}
-                />
-                Use "Errors" header
+              <label htmlFor="issues">
+                {HEADER_OPTIONS.find(h => h.value === selectedHeader)?.display || 'Issues'} (Optional)
               </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {/* NEW: Clear Issues button */}
+                <button
+                  className="toolbar-button"
+                  onClick={handleClearIssues}
+                  title="Clear issues textarea"
+                  style={{ fontSize: '12px', padding: '4px 10px', backgroundColor: '#2a2d2e' }}
+                >
+                  Clear
+                </button>
+                <button
+                  className="toolbar-button"
+                  onClick={() => saveIssues(issues)}
+                  disabled={!issues.trim()}
+                  style={{ fontSize: '12px', padding: '4px 10px' }}
+                >
+                  Save
+                </button>
+              </div>
             </div>
+
+            {/* Section Header Radio Buttons */}
+            <div style={{ marginBottom: '12px' }}>
+              <span style={{ color: '#888', fontSize: '13px', marginRight: '12px' }}>Section Header:</span>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: '8px' }}>
+                {HEADER_OPTIONS.map((option) => (
+                  <label key={option.value} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="header-option"
+                      value={option.value}
+                      checked={selectedHeader === option.value}
+                      onChange={(e) => setSelectedHeader(e.target.value)}
+                      style={{ margin: 0, cursor: 'pointer' }}
+                    />
+                    <span style={{ color: selectedHeader === option.value ? '#ccaa00' : '#ccc' }}>
+                      {option.display}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <textarea
               id="issues"
               className="prompt-textarea issues-textarea"
-              placeholder="List any known issues"
+              placeholder="List any known issues, feedback, logs, errors, or proposals..."
               value={issues}
               onChange={(e) => setIssues(e.target.value)}
               rows={2}
             />
-            <div className="char-counter">{issues.length} characters</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="char-counter">{issues.length} characters</div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                {lastSavedIssues && (
+                  <div style={{ fontSize: '11px', color: '#4ec9b0' }}>
+                    Saved {new Date(lastSavedIssues).toLocaleTimeString()}
+                  </div>
+                )}
+                {lastSavedHeader && (
+                  <div style={{ fontSize: '11px', color: '#4ec9b0' }}>
+                    Header saved {new Date(lastSavedHeader).toLocaleTimeString()}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -341,7 +538,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         <div className="form-actions">
           <button
             className="action-button secondary-button"
-            onClick={handleClearAll}
+            onClick={() => setGenerationStatus('idle')}
             disabled={generationStatus === 'generating'}
           >
             Reset Status
