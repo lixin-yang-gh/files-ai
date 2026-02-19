@@ -40,7 +40,8 @@ declare global {
       saveTask: (value: string) => Promise<{ success: true }>;
       getSelectedHeader: () => Promise<string>;
       saveSelectedHeader: (value: string) => Promise<{ success: true }>;
-
+      redactText: (text: string) => Promise<string>;
+      
       // Events
       on: (channel: string, callback: (...args: any[]) => void) => void;
     };

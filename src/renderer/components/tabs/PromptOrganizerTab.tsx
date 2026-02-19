@@ -255,13 +255,15 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       promptParts.push(`## System Prompt\n\n${sanitizedSystemPrompt}\n`);
       promptParts.push(`## Task\n\n${sanitizedTask}\n`);
 
-      if (sanitizedIssues) {
+      const redactedIssues = await window.electronAPI.redactText(sanitizedIssues);
+      if (redactedIssues) {
         const displayHeader = HEADER_OPTIONS.find(h => h.value === selectedHeader)?.display || 'Issues';
-        promptParts.push(`## ${displayHeader}\n\n${sanitizedIssues}\n`);
+        promptParts.push(`## ${displayHeader}\n\n${redactedIssues}\n`);
       }
 
-      if (referencedFilesContent.trim()) {
-        promptParts.push(`## Referenced Files\n\n${referencedFilesContent}`);
+      const redactedFilesContent = await window.electronAPI.redactText(referencedFilesContent);
+      if (redactedFilesContent.trim()) {
+        promptParts.push(`## Referenced Files\n\n${redactedFilesContent}`);
       }
 
       let fullPrompt = promptParts.join('\n\n---\n\n');

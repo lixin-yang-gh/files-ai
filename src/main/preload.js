@@ -25,6 +25,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getIssues: () => ipcRenderer.invoke('store:getIssues'),
   saveIssues: (value) => ipcRenderer.invoke('store:saveIssues', value),
 
+  redactText: (text) => ipcRenderer.invoke('redact-text', text),
+
   on: (channel, callback) => {
     ipcRenderer.on(channel, (_, ...args) => callback(...args));
   }
