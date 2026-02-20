@@ -23,7 +23,7 @@ const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
 ];
 
 const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
-  { key: 'Files', value: 'Please print out all the updated files n full.' },
+  { key: 'Files', value: 'Please print out all the updated files in full.' },
   { key: 'Files - conditional', value: 'If changes are required, please print out all the updated files in full.' },
   { key: 'Update blocks', value: 'Please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
   { key: 'Update blocks - conditional', value: 'If changes are required, please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
