@@ -250,7 +250,6 @@
 }
 
 .generate-prompt-button {
-    width: 100%;
     padding: 12px 20px;
     background: #0e639c;
     color: white;
@@ -262,6 +261,7 @@
     transition: all 0.2s;
     position: relative;
     overflow: hidden;
+    word-wrap: nowrap;
 }
 
 .generate-prompt-button:hover:not(:disabled) {
