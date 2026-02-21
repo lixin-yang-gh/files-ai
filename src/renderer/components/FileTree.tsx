@@ -30,6 +30,7 @@ const FileTree: React.FC<FileTreeProps> = ({
   const [highlightedFile, setHighlightedFile] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [recentlyCopied, setRecentlyCopied] = useState<string | null>(null);
 
   const prevSelectedPathsRef = useRef<string[]>([]);
   const lastSelectedFilesRef = useRef<string[]>([]); // Store selected files for refresh
@@ -436,7 +437,10 @@ const FileTree: React.FC<FileTreeProps> = ({
     // Copy the relative path to clipboard when clicked
     // Get relative path by removing the rootPath from the full path
     const relativePath = item.path.replace(rootPath, '').replace(/^[\/\\]/, '').replace(/\\/g, '/');
-    await copyToClipboard(`<project_root>/${relativePath}`);
+    const fullCopiedPath = `<project_root>/${relativePath}`;
+    await copyToClipboard(fullCopiedPath);
+    setRecentlyCopied(item.path);
+    setTimeout(() => setRecentlyCopied(null), 1200);
 
     if (item.isDirectory) {
       const newExpanded = new Set(expandedFolders);
@@ -544,7 +548,7 @@ const FileTree: React.FC<FileTreeProps> = ({
 
           {/* Folder/File icon and name */}
           <div
-            className={`tree-item-content ${item.isHighlighted ? 'highlighted' : ''}`}
+            className={`tree-item-content ${item.isHighlighted ? 'highlighted' : ''} ${recentlyCopied === item.path ? 'Path copied' : ''}`}
             onClick={() => toggleFolder(item)}
             style={{ padding: '2px 4px' }}
           >
@@ -556,6 +560,9 @@ const FileTree: React.FC<FileTreeProps> = ({
               <span className="file-icon">📄</span>
             )}
             <span className="item-name">{item.name}</span>
+            {recentlyCopied === item.path && (
+              <span className="copied-indicator">✓ copied</span>
+            )}
             {item.isDirectory && item.children && (
               <span className="selection-badge">
                 {item.children.filter(child => child.isFile).length}

@@ -3,6 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import Store from 'electron-store';
+// import { redactum } from "redactum";
+import { redactContent } from './redaction-config';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -170,6 +172,17 @@ ipcMain.handle('store:getIssues', () => {
 ipcMain.handle('store:saveIssues', (_, value: string) => {
   store.set('issues', value);
   return { success: true };
+});
+
+ipcMain.handle('redact-text', async (_, text: string) => {
+  try {
+    // const clean = redactum(text).redactedText;
+    // return clean;
+    return redactContent(text);
+  } catch (error) {
+    console.error('Redaction failed:', error);
+    return text; // Fallback to original text on error
+  }
 });
 
 // App lifecycle

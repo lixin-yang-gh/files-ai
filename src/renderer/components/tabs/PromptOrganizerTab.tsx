@@ -13,22 +13,30 @@ interface PromptOrganizerTabProps {
 
 // Define prepend and append button configurations for scalability
 const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
-  { key: 'Propose solution', value: 'Please propose the best solution for the following requirement.' },
-  { key: 'Propose enhancements', value: 'Please propose enhancement.' },
-  { key: 'Propose improvements', value: 'Please propose improvement.' },
-  { key: 'Propose code changes', value: 'Please propose code changes.' },
-  { key: 'Propose fixes', value: 'Please propose fixes.' },
+  { key: 'Solution', value: 'Please propose the best solution for the following requirement.' },
+  { key: 'Enhancements', value: 'Please propose enhancement.' },
+  { key: 'Improvements', value: 'Please propose improvement.' },
+  { key: 'Words', value: 'Please propose word changes.' },
+  { key: 'Codes', value: 'Please propose code changes.' },
+  { key: 'Fixes', value: 'Please propose fixes.' },
+  { key: 'Report', value: 'Please create a report.' },
 ];
 
 const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
-  { key: 'Full files', value: 'Please print out full contents of all the updated files.' },
-  { key: 'Updated blocks', value: 'Please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
+  { key: 'Files', value: 'Please print out all the updated files in full.' },
+  { key: 'Files - conditional', value: 'If changes are required, please print out all the updated files in full.' },
+  { key: 'Update blocks', value: 'Please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
+  { key: 'Update blocks - conditional', value: 'If changes are required, please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
 ];
 
 const HEADER_OPTIONS: Array<{ display: string; value: string }> = [
   { display: 'Issues', value: 'issues' },
   { display: 'Feedback', value: 'feedback' },
+  { display: 'Analysis', value: 'analysis' },
+  { display: 'Context', value: 'context' },
+  { display: 'Proposal', value: 'proposal' },
   { display: '3rd Party Proposal', value: 'third_party_proposal' },
+  { display: 'Info', value: 'information' },
   { display: 'Logs', value: 'logs' },
   { display: 'Errors', value: 'errors' },
 ];
@@ -239,7 +247,9 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     });
   };
 
-  const handleGeneratePrompt = async () => {
+
+
+  const handleGeneratePrompt = async (applyRedaction: boolean = true) => {
     if (!systemPrompt.trim() || !task.trim() || selectedFilePaths.length === 0) return;
 
     setGenerationStatus('generating');
@@ -255,13 +265,21 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       promptParts.push(`## System Prompt\n\n${sanitizedSystemPrompt}\n`);
       promptParts.push(`## Task\n\n${sanitizedTask}\n`);
 
+      // Handle Issues section with optional redaction
       if (sanitizedIssues) {
         const displayHeader = HEADER_OPTIONS.find(h => h.value === selectedHeader)?.display || 'Issues';
-        promptParts.push(`## ${displayHeader}\n\n${sanitizedIssues}\n`);
+        const issuesContent = applyRedaction
+          ? await window.electronAPI.redactText(sanitizedIssues)
+          : sanitizedIssues;
+        promptParts.push(`## ${displayHeader}\n\n${issuesContent}\n`);
       }
 
+      // Handle Referenced Files section with optional redaction
       if (referencedFilesContent.trim()) {
-        promptParts.push(`## Referenced Files\n\n${referencedFilesContent}`);
+        const filesContent = applyRedaction
+          ? await window.electronAPI.redactText(referencedFilesContent)
+          : referencedFilesContent;
+        promptParts.push(`## Referenced Files\n\n${filesContent}`);
       }
 
       let fullPrompt = promptParts.join('\n\n---\n\n');
@@ -296,18 +314,24 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
             </span>
           </div>
 
-          <button
-            className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${generationStatus === 'success' ? 'success' : ''
-              }`}
-            onClick={handleGeneratePrompt}
-            disabled={!canGeneratePrompt || generationStatus === 'generating'}
-          >
-            {generationStatus === 'generating'
-              ? 'Generating...'
-              : generationStatus === 'success'
-                ? '✓ Copied!'
-                : 'Generate Prompt'}
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${generationStatus === 'success' ? 'success' : ''
+                }`}
+              onClick={() => handleGeneratePrompt(false)}
+              disabled={!canGeneratePrompt || generationStatus === 'generating'}
+            >
+              Generate Prompt
+            </button>
+            <button
+              className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${generationStatus === 'success' ? 'success' : ''
+                }`}
+              onClick={() => handleGeneratePrompt(true)}
+              disabled={!canGeneratePrompt || generationStatus === 'generating'}
+            >
+              Generate Prompt with Redaction
+            </button>
+          </div>
         </div>
 
         {generationStatus === 'success' && (
@@ -317,6 +341,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
           <div className="alert-message alert-error">Failed to copy prompt</div>
         )}
       </div>
+
 
       <div className="prompt-organizer-tab">
         <div className="prompt-input-section">
