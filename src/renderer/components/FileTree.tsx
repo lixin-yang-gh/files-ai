@@ -548,7 +548,7 @@ const FileTree: React.FC<FileTreeProps> = ({
 
           {/* Folder/File icon and name */}
           <div
-            className={`tree-item-content ${item.isHighlighted ? 'highlighted' : ''} ${recentlyCopied === item.path ? 'copied' : ''}`}
+            className={`tree-item-content ${item.isHighlighted ? 'highlighted' : ''} ${recentlyCopied === item.path ? 'Path copied' : ''}`}
             onClick={() => toggleFolder(item)}
             style={{ padding: '2px 4px' }}
           >
