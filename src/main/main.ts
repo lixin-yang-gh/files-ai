@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, screen } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { fileURLToPath } from 'url';
@@ -15,6 +15,7 @@ interface StoreSchema {
   task?: string;
   issues?: string;
   selectedHeader?: string;
+  windowBounds?: { x: number; y: number; width: number; height: number };
 }
 
 // Initialize electron-store
@@ -24,7 +25,8 @@ const store = new Store<StoreSchema>({
     systemPrompt: "",
     task: '',
     issues: '',
-    selectedHeader: 'issues'
+    selectedHeader: 'issues',
+    windowBounds: { width: 1200, height: 800, x: 100, y: 100 }
   },
   name: 'app-settings'
 });
@@ -32,9 +34,13 @@ const store = new Store<StoreSchema>({
 let mainWindow: BrowserWindow | null = null;
 
 async function createWindow() {
+  const bounds = getValidatedWindowBounds();
+
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y,
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -69,8 +75,39 @@ async function createWindow() {
     }
   }
 
+  const saveBounds = () => {
+    if (mainWindow && !mainWindow.isMinimized()) {
+      store.set('windowBounds', mainWindow.getBounds());
+    }
+  };
+  mainWindow.on('resize', saveBounds);
+  mainWindow.on('move', saveBounds);
+  mainWindow.on('close', saveBounds);
+
   console.log(`__dirname=${__dirname}`);
 }
+
+const getValidatedWindowBounds = () => {
+  const saved = store.get('windowBounds') as { x?: number; y?: number; width?: number; height?: number } || {};
+  let { width = 1200, height = 800, x = 100, y = 100 } = saved;
+
+  const display = screen.getPrimaryDisplay();
+  const { width: screenW, height: screenH } = display.workAreaSize;
+
+  // If bigger than screen > resize to fill screen and move to top-left
+  if (width > screenW || height > screenH) {
+    width = screenW;
+    height = screenH;
+    x = 0;
+    y = 0;
+  } else {
+    // Ensure fully visible (clamp position)
+    x = Math.max(0, Math.min(x, screenW - width));
+    y = Math.max(0, Math.min(y, screenH - height));
+  }
+
+  return { width, height, x, y };
+};
 
 // IPC Handlers
 ipcMain.handle('dialog:openDirectory', async () => {
