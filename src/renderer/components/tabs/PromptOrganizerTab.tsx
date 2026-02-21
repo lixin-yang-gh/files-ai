@@ -32,6 +32,9 @@ const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
 const HEADER_OPTIONS: Array<{ display: string; value: string }> = [
   { display: 'Issues', value: 'issues' },
   { display: 'Feedback', value: 'feedback' },
+  { display: 'Analysis', value: 'analysis' },
+  { display: 'Context', value: 'context' },
+  { display: 'Proposal', value: 'proposal' },
   { display: '3rd Party Proposal', value: 'third_party_proposal' },
   { display: 'Info', value: 'information' },
   { display: 'Logs', value: 'logs' },
