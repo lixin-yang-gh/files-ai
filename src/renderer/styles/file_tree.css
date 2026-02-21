@@ -3,12 +3,12 @@
    ============================================= */
 
 .sidebar {
-    width: 300px;
+    width: var(--sidebar-width, 300px);
     background: #2d2d2d;
     color: #cccccc;
     display: flex;
     flex-direction: column;
-    /* border-right: 1px solid #1e1e1e; */
+    border-right: 1px solid #1e1e1e;
     height: 100%;
     overflow: hidden;
 }
@@ -88,7 +88,11 @@
     flex: 1 1 auto;
     min-height: 0;
     padding: 5px 0;
-    overflow: auto;
+    overflow: scroll;
+}
+
+.tree-content::-webkit-scrollbar-corner {
+    background-color: #333333;
 }
 
 /* Custom scrollbar */
@@ -369,23 +373,51 @@
 
 /* Copied indicator – visible word next to file/folder name */
 .copied-indicator {
-  margin-left: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #4ec9b0;
-  background: rgba(78, 201, 176, 0.15);
-  border: 1px solid rgba(78, 201, 176, 0.4);
-  border-radius: 3px;
-  padding: 1px 7px 2px;
-  white-space: nowrap;
-  animation: fadeOutCopied 1450ms ease-out forwards;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
+    margin-left: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #4ec9b0;
+    background: rgba(78, 201, 176, 0.15);
+    border: 1px solid rgba(78, 201, 176, 0.4);
+    border-radius: 3px;
+    padding: 1px 7px 2px;
+    white-space: nowrap;
+    animation: fadeOutCopied 1450ms ease-out forwards;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
 }
 
 @keyframes fadeOutCopied {
-  0%   { opacity: 1; transform: scale(1); }
-  75%  { opacity: 1; }
-  100% { opacity: 0; transform: scale(0.92); }
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    75% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+}
+
+
+/* Resizer styles */
+.resizer {
+    width: 4px;
+    background: #252526;
+    cursor: col-resize;
+    flex-shrink: 0;
+    z-index: 100;
+}
+
+.resizer:hover {
+    background: #0e639c;
+}
+
+.resizer:active {
+    background: #007acc;
 }
