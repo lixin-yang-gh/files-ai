@@ -350,7 +350,7 @@
 
 /*  Copy animation for tree items */
 .tree-item-content.copied {
-    animation: copyPulse 0.3s ease-in-out;
+    animation: copyPulse 0.4s ease-in-out;
 }
 
 @keyframes copyPulse {
@@ -365,4 +365,27 @@
     100% {
         background-color: rgba(78, 201, 176, 0);
     }
+}
+
+/* Copied indicator – visible word next to file/folder name */
+.copied-indicator {
+  margin-left: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4ec9b0;
+  background: rgba(78, 201, 176, 0.15);
+  border: 1px solid rgba(78, 201, 176, 0.4);
+  border-radius: 3px;
+  padding: 1px 7px 2px;
+  white-space: nowrap;
+  animation: fadeOutCopied 1450ms ease-out forwards;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+@keyframes fadeOutCopied {
+  0%   { opacity: 1; transform: scale(1); }
+  75%  { opacity: 1; }
+  100% { opacity: 0; transform: scale(0.92); }
 }
