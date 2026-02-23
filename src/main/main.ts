@@ -16,6 +16,7 @@ interface StoreSchema {
   issues?: string;
   selectedHeader?: string;
   windowBounds?: { x: number; y: number; width: number; height: number };
+  maskedSubstrings?: string;
 }
 
 // Initialize electron-store
@@ -26,7 +27,8 @@ const store = new Store<StoreSchema>({
     task: '',
     issues: '',
     selectedHeader: 'issues',
-    windowBounds: { width: 1200, height: 800, x: 100, y: 100 }
+    windowBounds: { width: 1200, height: 800, x: 100, y: 100 },
+    maskedSubstrings: ''
   },
   name: 'app-settings'
 });
@@ -220,6 +222,15 @@ ipcMain.handle('redact-text', async (_, text: string) => {
     console.error('Redaction failed:', error);
     return text; // Fallback to original text on error
   }
+});
+
+ipcMain.handle('store:getMaskedSubstrings', () => {
+  return store.get('maskedSubstrings') || '';
+});
+
+ipcMain.handle('store:saveMaskedSubstrings', (_, value: string) => {
+  store.set('maskedSubstrings', value);
+  return { success: true };
 });
 
 // App lifecycle

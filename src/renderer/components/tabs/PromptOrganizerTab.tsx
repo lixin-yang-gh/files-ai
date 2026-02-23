@@ -3,6 +3,8 @@ import {
   getErrorMessage,
   getRelativePath,
   sanitizeText,
+  parseMaskedSubstrings,
+  applyCustomMasking
 } from '../../../shared/utils';
 
 interface PromptOrganizerTabProps {
@@ -58,6 +60,42 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [lastSavedTask, setLastSavedTask] = useState<number | null>(null);
   const [lastSavedIssues, setLastSavedIssues] = useState<number | null>(null); // Add this
   const [lastSavedHeader, setLastSavedHeader] = useState<number | null>(null);
+  const [maskedSubstrings, setMaskedSubstrings] = useState('');
+  const [lastSavedMaskedSubstrings, setLastSavedMaskedSubstrings] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadSavedData = async () => {
+      try {
+        // ... existing loads ...
+
+        // Load masked substrings
+        const savedMaskedSubstrings = await window.electronAPI.getMaskedSubstrings();
+        if (savedMaskedSubstrings) setMaskedSubstrings(savedMaskedSubstrings);
+      } catch (err) {
+        console.error('Failed to load saved data:', err);
+      }
+    };
+    loadSavedData();
+  }, []);
+
+  const saveMaskedSubstrings = useCallback(async (value: string) => {
+    try {
+      await window.electronAPI.saveMaskedSubstrings(value);
+      setLastSavedMaskedSubstrings(Date.now());
+    } catch (err) {
+      console.error('Failed to save masked substrings:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (maskedSubstrings === '') return;
+    const timer = setTimeout(() => {
+      saveMaskedSubstrings(maskedSubstrings);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [maskedSubstrings, saveMaskedSubstrings]);
+
+
 
   // Load saved data on component mount
   useEffect(() => {
@@ -263,23 +301,27 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       const sanitizedTask = sanitizeText(task.trim());
       const sanitizedIssues = issues.trim() ? sanitizeText(issues.trim()) : '';
 
+      const customSubstrings = parseMaskedSubstrings(maskedSubstrings);
+
       promptParts.push(`## System Prompt\n\n${sanitizedSystemPrompt}\n`);
       promptParts.push(`## Task\n\n${sanitizedTask}\n`);
 
       // Handle Issues section with optional redaction
       if (sanitizedIssues) {
         const displayHeader = HEADER_OPTIONS.find(h => h.value === selectedHeader)?.display || 'Issues';
-        const issuesContent = applyRedaction
+        let issuesContent = applyRedaction
           ? await window.electronAPI.redactText(sanitizedIssues)
           : sanitizedIssues;
+        issuesContent = applyCustomMasking(issuesContent, customSubstrings)
         promptParts.push(`## ${displayHeader}\n\n${issuesContent}\n`);
       }
 
       // Handle Referenced Files section with optional redaction
       if (referencedFilesContent.trim()) {
-        const filesContent = applyRedaction
+        let filesContent = applyRedaction
           ? await window.electronAPI.redactText(referencedFilesContent)
           : referencedFilesContent;
+        filesContent = applyCustomMasking(filesContent, customSubstrings);
         promptParts.push(`## Referenced Files\n\n${filesContent}`);
       }
 
@@ -313,6 +355,50 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   ? `${selectedFilePaths.length} files ready`
                   : 'No files selected'}
             </span>
+          </div>
+
+          <div className="masked-substrings-container">
+            <label
+              htmlFor="masked-substrings"
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                color: '#888',
+                fontSize: '13px',
+                fontWeight: '500'
+              }}
+            >
+              Masked Substrings
+            </label>
+            <input
+              id="masked-substrings"
+              type="text"
+              className="masked-substrings-input"
+              placeholder='"substring1", "substring2", "substring3"'
+              title="Additional substrings to be masked and presented as [Sensitive] in the redacted prompt"
+              value={maskedSubstrings}
+              onChange={(e) => setMaskedSubstrings(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                background: '#3c3c3c',
+                color: '#cccccc',
+                border: '1px solid #555',
+                borderRadius: '4px',
+                fontSize: '13px',
+                marginBottom: '5px'
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="char-counter" style={{ fontSize: '11px', color: '#888' }}>
+                {maskedSubstrings.length} characters
+              </div>
+              {lastSavedMaskedSubstrings && (
+                <div style={{ fontSize: '11px', color: '#4ec9b0' }}>
+                  Saved {new Date(lastSavedMaskedSubstrings).toLocaleTimeString()}
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>

@@ -25,6 +25,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getIssues: () => ipcRenderer.invoke('store:getIssues'),
   saveIssues: (value) => ipcRenderer.invoke('store:saveIssues', value),
 
+  getMaskedSubstrings: () => ipcRenderer.invoke('store:getMaskedSubstrings'),
+  saveMaskedSubstrings: (value) => ipcRenderer.invoke('store:saveMaskedSubstrings', value),
+
   redactText: (text) => ipcRenderer.invoke('redact-text', text),
 
   on: (channel, callback) => {

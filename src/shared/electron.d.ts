@@ -41,7 +41,9 @@ declare global {
       getSelectedHeader: () => Promise<string>;
       saveSelectedHeader: (value: string) => Promise<{ success: true }>;
       redactText: (text: string) => Promise<string>;
-      
+      getMaskedSubstrings: () => Promise<string>;
+      saveMaskedSubstrings: (value: string) => Promise<{ success: true }>;
+
       // Events
       on: (channel: string, callback: (...args: any[]) => void) => void;
     };

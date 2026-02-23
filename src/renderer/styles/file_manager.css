@@ -909,3 +909,19 @@ pre::-webkit-scrollbar-thumb:hover,
         max-height: 250px;
     }
 }
+
+.masked-substrings-container {
+    padding: 0 20px;
+    width: 100%;
+}
+
+.masked-substrings-input:focus {
+    outline: none;
+    border-color: #0e639c;
+    box-shadow: 0 0 0 1px #0e639c;
+}
+
+.masked-substrings-input::placeholder {
+    color: #666;
+    font-style: italic;
+}
