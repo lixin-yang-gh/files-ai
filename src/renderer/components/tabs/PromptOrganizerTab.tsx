@@ -13,7 +13,8 @@ interface PromptOrganizerTabProps {
 
 // Define prepend and append button configurations for scalability
 const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
-  { key: 'Solution', value: 'Please propose the best solution for the following requirement.' },
+  { key: 'Feasibility', value: 'Please explore feasibility.' },
+  { key: 'Solution', value: 'Please propose the best solution.' },
   { key: 'Enhancements', value: 'Please propose enhancement.' },
   { key: 'Improvements', value: 'Please propose improvement.' },
   { key: 'Words', value: 'Please propose word changes.' },
@@ -23,10 +24,10 @@ const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
 ];
 
 const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
-  { key: 'Files', value: 'Please print out all the updated files in full. Each file block should have a header to indicate the file path and a summary of all the updates applied to the file.' },
-  { key: 'Files - conditional', value: 'If changes are required, please print out all the updated files in full. Each file block should have a header to indicate the file path and a summary of all the updates applied to the file.' },
-  { key: 'Update blocks', value: 'Please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block with obvious visual separation between them. Please include a short explanation or reason to each operation. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
-  { key: 'Update blocks - conditional', value: 'If changes are required, please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block with obvious visual separation between them. Please include a short explanation or reason to each operation. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' }
+  { key: 'Files', value: '\n---\nPlease print out all the updated files in full. Each file block should have a header to indicate the file path and a summary of all the updates applied to the file.' },
+  { key: 'Files - conditional', value: '\n---\nIf changes are required, please print out all the updated files in full. Each file block should have a header to indicate the file path and a summary of all the updates applied to the file.' },
+  { key: 'Update blocks', value: '\n---\nPlease print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block with obvious visual separation between them. Please indicate an update operation is a whole file operation if the block to be added, deleted or replaced is actually the whole file. Please include a short explanation or reason to each operation. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
+  { key: 'Update blocks - conditional', value: '\n---\nIf changes are required, please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block with obvious visual separation between them. Please indicate an update operation is a whole file operation if the block to be added, deleted or replaced is actually the whole file. Please include a short explanation or reason to each operation. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' }
 ];
 
 const HEADER_OPTIONS: Array<{ display: string; value: string }> = [

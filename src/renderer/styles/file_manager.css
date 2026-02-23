@@ -227,6 +227,11 @@
     font-style: italic;
 }
 
+.prompt-textarea::-webkit-scrollbar-corner {
+    background-color: #333333;
+    border: none;
+}
+
 /* Generate Prompt Section */
 .generate-prompt-section {
     background: #252526;
@@ -295,6 +300,11 @@
 /* Issues textarea - slightly smaller */
 .issues-textarea {
     min-height: 200px;
+}
+
+.issues-textarea::-webkit-scrollbar-corner {
+    background-color: #333333;
+    border: none;
 }
 
 /* Referenced files display */
