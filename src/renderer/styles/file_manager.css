@@ -227,6 +227,11 @@
     font-style: italic;
 }
 
+.prompt-textarea::-webkit-scrollbar-corner {
+    background-color: #333333;
+    border: none;
+}
+
 /* Generate Prompt Section */
 .generate-prompt-section {
     background: #252526;
@@ -295,6 +300,11 @@
 /* Issues textarea - slightly smaller */
 .issues-textarea {
     min-height: 200px;
+}
+
+.issues-textarea::-webkit-scrollbar-corner {
+    background-color: #333333;
+    border: none;
 }
 
 /* Referenced files display */
@@ -898,4 +908,20 @@ pre::-webkit-scrollbar-thumb:hover,
     .referenced-files-content {
         max-height: 250px;
     }
+}
+
+.masked-substrings-container {
+    padding: 0 20px;
+    width: 100%;
+}
+
+.masked-substrings-input:focus {
+    outline: none;
+    border-color: #0e639c;
+    box-shadow: 0 0 0 1px #0e639c;
+}
+
+.masked-substrings-input::placeholder {
+    color: #666;
+    font-style: italic;
 }

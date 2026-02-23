@@ -68,3 +68,8 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #4a4a4a;
 }
+
+::-webkit-scrollbar-corner {
+    background-color: #333333;
+    border: none;
+}

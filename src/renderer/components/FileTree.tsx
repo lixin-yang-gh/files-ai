@@ -18,6 +18,16 @@ const copyToClipboard = async (text: string) => {
   }
 };
 
+const sortFileItems = (items: FileItem[]): FileItem[] => {
+  const folders = items
+    .filter(item => item.isDirectory)
+    .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+  const files = items
+    .filter(item => item.isFile)
+    .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+  return [...folders, ...files];
+};
+
 const FileTree: React.FC<FileTreeProps> = ({
   rootPath,
   onFileSelect,
@@ -91,14 +101,14 @@ const FileTree: React.FC<FileTreeProps> = ({
   const loadDirectory = async (dirPath: string) => {
     try {
       await window.electronAPI.saveLastOpenedFolder(dirPath);
-
       const items = await window.electronAPI.readDirectory(dirPath);
       const itemsWithState = items.map(item => ({
         ...item,
         isChecked: selectedFilePaths.has(item.path),
         isHighlighted: false
       }));
-      setTree(itemsWithState);
+      const sortedItems = sortFileItems(itemsWithState);
+      setTree(sortedItems);
       if (onFolderOpen) {
         onFolderOpen(dirPath);
       }
@@ -201,9 +211,9 @@ const FileTree: React.FC<FileTreeProps> = ({
         isChecked: selectedFilePaths.has(child.path),
         isHighlighted: false
       }));
-
+      const sortedChildren = sortFileItems(childrenWithState);
       setTree(prevTree => updateTreeItem(prevTree, folderPath, {
-        children: childrenWithState
+        children: sortedChildren
       }));
     } catch (error) {
       console.error(`Error loading folder ${folderPath}:`, error);
@@ -293,20 +303,18 @@ const FileTree: React.FC<FileTreeProps> = ({
             isChecked: false,
             isHighlighted: false
           }));
-
-          // Update tree with loaded children
+          const sortedChildren = sortFileItems(childrenWithState);
+          // Update tree with loaded children  
           setTree(prevTree => {
             const updatedTree = updateTreeItem(prevTree, item.path, {
-              children: childrenWithState,
+              children: sortedChildren,
               isChecked: checked
             });
-
-            // Update children's checked state
+            // Update children's checked state  
             return updateChildrenCheckedState(updatedTree, item.path, checked, false);
           });
-
-          // Get only first-level files
-          const firstLevelFiles = childrenWithState
+          // Get only first-level files  
+          const firstLevelFiles = sortedChildren
             .filter(child => child.isFile)
             .map(file => file.path);
 
@@ -452,16 +460,13 @@ const FileTree: React.FC<FileTreeProps> = ({
         if (!item.children) {
           try {
             const children = await window.electronAPI.readDirectory(item.path);
-            const updatedItem = {
-              ...item,
-              children: children.map(child => ({
-                ...child,
-                isChecked: selectedFilePaths.has(child.path),
-                isHighlighted: false
-              }))
-            };
-
-            setTree(prevTree => updateTreeItem(prevTree, item.path, { children: updatedItem.children }));
+            const childrenWithState = children.map(child => ({
+              ...child,
+              isChecked: selectedFilePaths.has(child.path),
+              isHighlighted: false
+            }));
+            const sortedChildren = sortFileItems(childrenWithState);
+            setTree(prevTree => updateTreeItem(prevTree, item.path, { children: sortedChildren }));
           } catch (error) {
             console.error('Error loading folder:', error);
           }

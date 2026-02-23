@@ -3,6 +3,8 @@ import {
   getErrorMessage,
   getRelativePath,
   sanitizeText,
+  parseMaskedSubstrings,
+  applyCustomMasking
 } from '../../../shared/utils';
 
 interface PromptOrganizerTabProps {
@@ -13,7 +15,8 @@ interface PromptOrganizerTabProps {
 
 // Define prepend and append button configurations for scalability
 const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
-  { key: 'Solution', value: 'Please propose the best solution for the following requirement.' },
+  { key: 'Feasibility', value: 'Please explore feasibility.' },
+  { key: 'Solution', value: 'Please propose the best solution.' },
   { key: 'Enhancements', value: 'Please propose enhancement.' },
   { key: 'Improvements', value: 'Please propose improvement.' },
   { key: 'Words', value: 'Please propose word changes.' },
@@ -23,10 +26,10 @@ const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
 ];
 
 const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
-  { key: 'Files', value: 'Please print out all the updated files in full.' },
-  { key: 'Files - conditional', value: 'If changes are required, please print out all the updated files in full.' },
-  { key: 'Update blocks', value: 'Please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
-  { key: 'Update blocks - conditional', value: 'If changes are required, please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
+  { key: 'Files', value: '\n---\nPlease print out all the updated files in full. Each file block should have a header to indicate the file path and a summary of all the updates applied to the file.' },
+  { key: 'Files - conditional', value: '\n---\nIf changes are required, please print out all the updated files in full. Each file block should have a header to indicate the file path and a summary of all the updates applied to the file.' },
+  { key: 'Update blocks', value: '\n---\nPlease print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block with obvious visual separation between them. Please indicate an update operation is a whole file operation if the block to be added, deleted or replaced is actually the whole file. Please include a short explanation or reason to each operation. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
+  { key: 'Update blocks - conditional', value: '\n---\nIf changes are required, please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block with obvious visual separation between them. Please indicate an update operation is a whole file operation if the block to be added, deleted or replaced is actually the whole file. Please include a short explanation or reason to each operation. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' }
 ];
 
 const HEADER_OPTIONS: Array<{ display: string; value: string }> = [
@@ -57,6 +60,8 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [lastSavedTask, setLastSavedTask] = useState<number | null>(null);
   const [lastSavedIssues, setLastSavedIssues] = useState<number | null>(null); // Add this
   const [lastSavedHeader, setLastSavedHeader] = useState<number | null>(null);
+  const [maskedSubstrings, setMaskedSubstrings] = useState('');
+  const [lastSavedMaskedSubstrings, setLastSavedMaskedSubstrings] = useState<number | null>(null);
 
   // Load saved data on component mount
   useEffect(() => {
@@ -82,12 +87,32 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
           // Default to 'issues' if nothing saved
           setSelectedHeader('issues');
         }
+
+        const savedMaskedSubstrings = await window.electronAPI.getMaskedSubstrings();
+        if (savedMaskedSubstrings) setMaskedSubstrings(savedMaskedSubstrings);
       } catch (err) {
         console.error('Failed to load saved data:', err);
       }
     };
     loadSavedData();
   }, []);
+
+  const saveMaskedSubstrings = useCallback(async (value: string) => {
+    try {
+      await window.electronAPI.saveMaskedSubstrings(value);
+      setLastSavedMaskedSubstrings(Date.now());
+    } catch (err) {
+      console.error('Failed to save masked substrings:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (maskedSubstrings === '') return;
+    const timer = setTimeout(() => {
+      saveMaskedSubstrings(maskedSubstrings);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [maskedSubstrings, saveMaskedSubstrings]);
 
   const saveSystemPrompt = useCallback(async (value: string) => {
     try {
@@ -262,23 +287,27 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       const sanitizedTask = sanitizeText(task.trim());
       const sanitizedIssues = issues.trim() ? sanitizeText(issues.trim()) : '';
 
+      const customSubstrings = parseMaskedSubstrings(maskedSubstrings);
+
       promptParts.push(`## System Prompt\n\n${sanitizedSystemPrompt}\n`);
       promptParts.push(`## Task\n\n${sanitizedTask}\n`);
 
       // Handle Issues section with optional redaction
       if (sanitizedIssues) {
         const displayHeader = HEADER_OPTIONS.find(h => h.value === selectedHeader)?.display || 'Issues';
-        const issuesContent = applyRedaction
+        let issuesContent = applyRedaction
           ? await window.electronAPI.redactText(sanitizedIssues)
           : sanitizedIssues;
+        issuesContent = applyCustomMasking(issuesContent, customSubstrings)
         promptParts.push(`## ${displayHeader}\n\n${issuesContent}\n`);
       }
 
       // Handle Referenced Files section with optional redaction
       if (referencedFilesContent.trim()) {
-        const filesContent = applyRedaction
+        let filesContent = applyRedaction
           ? await window.electronAPI.redactText(referencedFilesContent)
           : referencedFilesContent;
+        filesContent = applyCustomMasking(filesContent, customSubstrings);
         promptParts.push(`## Referenced Files\n\n${filesContent}`);
       }
 
@@ -312,6 +341,50 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   ? `${selectedFilePaths.length} files ready`
                   : 'No files selected'}
             </span>
+          </div>
+
+          <div className="masked-substrings-container">
+            <label
+              htmlFor="masked-substrings"
+              style={{
+                display: 'block',
+                marginBottom: '5px',
+                color: '#888',
+                fontSize: '13px',
+                fontWeight: '500'
+              }}
+            >
+              Masked Substrings
+            </label>
+            <input
+              id="masked-substrings"
+              type="text"
+              className="masked-substrings-input"
+              placeholder='"substring1", "substring2", "substring3"'
+              title="Custom substrings masked and presented as [SENSITIVE] in the redacted prompt"
+              value={maskedSubstrings}
+              onChange={(e) => setMaskedSubstrings(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                background: '#3c3c3c',
+                color: '#cccccc',
+                border: '1px solid #555',
+                borderRadius: '4px',
+                fontSize: '13px',
+                marginBottom: '5px'
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="char-counter" style={{ fontSize: '11px', color: '#888' }}>
+                {maskedSubstrings.length} characters
+              </div>
+              {lastSavedMaskedSubstrings && (
+                <div style={{ fontSize: '11px', color: '#4ec9b0' }}>
+                  Saved {new Date(lastSavedMaskedSubstrings).toLocaleTimeString()}
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
