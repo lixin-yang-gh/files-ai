@@ -63,12 +63,31 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [maskedSubstrings, setMaskedSubstrings] = useState('');
   const [lastSavedMaskedSubstrings, setLastSavedMaskedSubstrings] = useState<number | null>(null);
 
+  // Load saved data on component mount
   useEffect(() => {
     const loadSavedData = async () => {
       try {
-        // ... existing loads ...
+        // Load system prompt
+        const savedSystemPrompt = await window.electronAPI.getSystemPrompt();
+        if (savedSystemPrompt) setSystemPrompt(savedSystemPrompt);
 
-        // Load masked substrings
+        // Load task
+        const savedTask = await window.electronAPI.getTask();
+        if (savedTask) setTask(savedTask);
+
+        // Load issues - NEW
+        const savedIssues = await window.electronAPI.getIssues();
+        if (savedIssues) setIssues(savedIssues);
+
+        // Load header selection
+        const savedHeader = await window.electronAPI.getSelectedHeader();
+        if (savedHeader) {
+          setSelectedHeader(savedHeader);
+        } else {
+          // Default to 'issues' if nothing saved
+          setSelectedHeader('issues');
+        }
+
         const savedMaskedSubstrings = await window.electronAPI.getMaskedSubstrings();
         if (savedMaskedSubstrings) setMaskedSubstrings(savedMaskedSubstrings);
       } catch (err) {
@@ -94,39 +113,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     }, 800);
     return () => clearTimeout(timer);
   }, [maskedSubstrings, saveMaskedSubstrings]);
-
-
-
-  // Load saved data on component mount
-  useEffect(() => {
-    const loadSavedData = async () => {
-      try {
-        // Load system prompt
-        const savedSystemPrompt = await window.electronAPI.getSystemPrompt();
-        if (savedSystemPrompt) setSystemPrompt(savedSystemPrompt);
-
-        // Load task
-        const savedTask = await window.electronAPI.getTask();
-        if (savedTask) setTask(savedTask);
-
-        // Load issues - NEW
-        const savedIssues = await window.electronAPI.getIssues();
-        if (savedIssues) setIssues(savedIssues);
-
-        // Load header selection
-        const savedHeader = await window.electronAPI.getSelectedHeader();
-        if (savedHeader) {
-          setSelectedHeader(savedHeader);
-        } else {
-          // Default to 'issues' if nothing saved
-          setSelectedHeader('issues');
-        }
-      } catch (err) {
-        console.error('Failed to load saved data:', err);
-      }
-    };
-    loadSavedData();
-  }, []);
 
   const saveSystemPrompt = useCallback(async (value: string) => {
     try {
@@ -375,7 +361,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               type="text"
               className="masked-substrings-input"
               placeholder='"substring1", "substring2", "substring3"'
-              title="Additional substrings to be masked and presented as [Sensitive] in the redacted prompt"
+              title="Custom substrings masked and presented as [SENSITIVE] in the redacted prompt"
               value={maskedSubstrings}
               onChange={(e) => setMaskedSubstrings(e.target.value)}
               style={{
