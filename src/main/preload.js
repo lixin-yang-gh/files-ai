@@ -13,7 +13,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getLastOpenedFolder: () => ipcRenderer.invoke('store:getLastOpenedFolder'),
   saveLastOpenedFolder: (path) => ipcRenderer.invoke('store:saveLastOpenedFolder', path),
 
-  // Updated to accept folderPath
+  // Bulk folder state operations
+  getFolderState: (folderPath) => ipcRenderer.invoke('store:getFolderState', folderPath),
+  saveFolderState: (folderPath, state) => ipcRenderer.invoke('store:saveFolderState', folderPath, state),
+
+  // Individual operations (for granular auto-saving)
   getSystemPrompt: (folderPath) => ipcRenderer.invoke('store:getSystemPrompt', folderPath),
   saveSystemPrompt: (folderPath, value) => ipcRenderer.invoke('store:saveSystemPrompt', folderPath, value),
 

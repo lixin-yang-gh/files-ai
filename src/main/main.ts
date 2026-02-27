@@ -179,19 +179,6 @@ ipcMain.handle('store:saveLastOpenedFolder', (_, folderPath: string) => {
   return { success: true };
 });
 
-// Helper to get folder state
-const getFolderState = (folderPath: string): FolderSpecificState => {
-  const states = store.get('folderStates') || {};
-  return states[folderPath] || {};
-};
-
-// Helper to save folder state
-const saveFolderState = (folderPath: string, newState: Partial<FolderSpecificState>) => {
-  const states = store.get('folderStates') || {};
-  states[folderPath] = { ...states[folderPath], ...newState };
-  store.set('folderStates', states);
-};
-
 // Updated IPC handlers for folder-specific state
 ipcMain.handle('store:getSystemPrompt', (_, folderPath: string) => {
   return getFolderState(folderPath).systemPrompt || '';
@@ -246,6 +233,33 @@ ipcMain.handle('store:getMaskedSubstrings', (_, folderPath: string) => {
 
 ipcMain.handle('store:saveMaskedSubstrings', (_, folderPath: string, value: string) => {
   saveFolderState(folderPath, { maskedSubstrings: value });
+  return { success: true };
+});
+
+// Helper to get folder state
+const getFolderState = (folderPath: string): FolderSpecificState => {
+  const states = store.get('folderStates') || {};
+  return states[folderPath] || {};
+};
+
+// Helper to save folder state
+const saveFolderState = (folderPath: string, newState: Partial<FolderSpecificState>) => {
+  const states = store.get('folderStates') || {};
+  states[folderPath] = { ...states[folderPath], ...newState };
+  store.set('folderStates', states);
+};
+
+// Bulk operations for efficient folder switching
+ipcMain.handle('store:getFolderState', (_, folderPath: string): FolderSpecificState | undefined => {
+  const states = store.get('folderStates') || {};
+  return states[folderPath]; // Returns undefined if key doesn't exist
+});
+
+ipcMain.handle('store:saveFolderState', (_, folderPath: string, state: FolderSpecificState) => {
+  const states = store.get('folderStates') || {};
+  // Overwrite or create the entry for this folder
+  states[folderPath] = state;
+  store.set('folderStates', states);
   return { success: true };
 });
 

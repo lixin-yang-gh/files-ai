@@ -65,38 +65,64 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
 
   // Load saved data when rootFolder changes
   useEffect(() => {
-    const loadSavedData = async () => {
-      // Ensure we have a valid folder path
-      const folderPath = rootFolder || '';
+    const handleFolderChange = async () => {
+      if (!rootFolder) return;
 
       try {
-        // Load state for the specific folder path
-        const savedSystemPrompt = await window.electronAPI.getSystemPrompt(folderPath);
-        const savedTask = await window.electronAPI.getTask(folderPath);
-        const savedIssues = await window.electronAPI.getIssues(folderPath);
-        const savedHeader = await window.electronAPI.getSelectedHeader(folderPath);
-        const savedMaskedSubstrings = await window.electronAPI.getMaskedSubstrings(folderPath);
+        // Check if state exists for this specific folder
+        const savedState = await window.electronAPI.getFolderState(rootFolder);
 
-        setSystemPrompt(savedSystemPrompt);
-        setTask(savedTask);
-        setIssues(savedIssues);
-        setSelectedHeader(savedHeader || 'issues');
-        setMaskedSubstrings(savedMaskedSubstrings);
+        if (savedState) {
+          // State exists: Load it into the UI
+          setSystemPrompt(savedState.systemPrompt || '');
+          setTask(savedState.task || '');
+          setIssues(savedState.issues || '');
+          setSelectedHeader(savedState.selectedHeader || 'issues');
+          setMaskedSubstrings(savedState.maskedSubstrings || '');
+        } else {
+          // State does NOT exist: Inherit current values (Inheritance Logic)
+          // The current state variables hold values from the previous folder context.
+          // We save these current values to the new folder's key.
 
-        // Reset timestamps
-        setLastSavedSystemPrompt(null);
-        setLastSavedTask(null);
-        setLastSavedIssues(null);
-        setLastSavedHeader(null);
-        setLastSavedMaskedSubstrings(null);
+          const currentStateToInherit = {
+            systemPrompt,
+            task,
+            issues,
+            selectedHeader,
+            maskedSubstrings
+          };
+
+          // Save to the new folder path
+          await window.electronAPI.saveFolderState(rootFolder, currentStateToInherit);
+
+          // UI remains unchanged (values are inherited). 
+          // Optional: Indicate save time
+          const now = Date.now();
+          setLastSavedSystemPrompt(now);
+          setLastSavedTask(now);
+          setLastSavedIssues(now);
+          setLastSavedHeader(now);
+          setLastSavedMaskedSubstrings(now);
+        }
+
+        // Reset timestamps for 'last saved' displays if we loaded old data
+        // (Only relevant if we want to show "Loaded" vs "Saved")
+        // Here we reset them to null to avoid confusion, or leave as is.
+        // For inheritance, we set the timestamps above.
 
       } catch (err) {
-        console.error('Failed to load saved data:', err);
+        console.error('Failed to handle folder change:', err);
       }
     };
 
-    loadSavedData();
-  }, [rootFolder]); // Dependency on rootFolder
+    handleFolderChange();
+    // Note: We intentionally only depend on rootFolder. 
+    // We want to capture the *current* state (from previous render) when folder changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rootFolder]);
+
+  // ... existing callbacks (saveMaskedSubstrings, saveSystemPrompt, etc.) ...
+  // (Keep the rest of the component exactly the same as the previous update)
 
   const saveMaskedSubstrings = useCallback(async (value: string) => {
     if (!rootFolder) return;

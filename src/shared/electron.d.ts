@@ -1,6 +1,15 @@
 // src/shared/electron.d.ts
 export { };
 
+// Mirror the interface from main process for type safety
+interface FolderSpecificState {
+  systemPrompt?: string;
+  task?: string;
+  issues?: string;
+  selectedHeader?: string;
+  maskedSubstrings?: string;
+}
+
 declare global {
   interface Window {
     electronAPI: {
@@ -33,7 +42,11 @@ declare global {
       getLastOpenedFolder: () => Promise<string | undefined>;
       saveLastOpenedFolder: (path: string) => Promise<{ success: true }>;
 
-      // Prompt persistence operations (now folder-specific)
+      // Bulk folder state operations
+      getFolderState: (folderPath: string) => Promise<FolderSpecificState | undefined>;
+      saveFolderState: (folderPath: string, state: FolderSpecificState) => Promise<{ success: true }>;
+
+      // Individual prompt persistence operations
       getSystemPrompt: (folderPath: string) => Promise<string>;
       saveSystemPrompt: (folderPath: string, value: string) => Promise<{ success: true }>;
       getTask: (folderPath: string) => Promise<string>;
