@@ -33,16 +33,19 @@ declare global {
       getLastOpenedFolder: () => Promise<string | undefined>;
       saveLastOpenedFolder: (path: string) => Promise<{ success: true }>;
 
-      // Prompt persistence operations
-      getSystemPrompt: () => Promise<string>;
-      saveSystemPrompt: (value: string) => Promise<{ success: true }>;
-      getTask: () => Promise<string>;
-      saveTask: (value: string) => Promise<{ success: true }>;
-      getSelectedHeader: () => Promise<string>;
-      saveSelectedHeader: (value: string) => Promise<{ success: true }>;
+      // Prompt persistence operations (now folder-specific)
+      getSystemPrompt: (folderPath: string) => Promise<string>;
+      saveSystemPrompt: (folderPath: string, value: string) => Promise<{ success: true }>;
+      getTask: (folderPath: string) => Promise<string>;
+      saveTask: (folderPath: string, value: string) => Promise<{ success: true }>;
+      getSelectedHeader: (folderPath: string) => Promise<string>;
+      saveSelectedHeader: (folderPath: string, value: string) => Promise<{ success: true }>;
+      getIssues: (folderPath: string) => Promise<string>;
+      saveIssues: (folderPath: string, value: string) => Promise<{ success: true }>;
+      getMaskedSubstrings: (folderPath: string) => Promise<string>;
+      saveMaskedSubstrings: (folderPath: string, value: string) => Promise<{ success: true }>;
+
       redactText: (text: string) => Promise<string>;
-      getMaskedSubstrings: () => Promise<string>;
-      saveMaskedSubstrings: (value: string) => Promise<{ success: true }>;
 
       // Events
       on: (channel: string, callback: (...args: any[]) => void) => void;

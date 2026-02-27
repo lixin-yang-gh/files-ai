@@ -58,134 +58,139 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [generationStatus, setGenerationStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
   const [lastSavedSystemPrompt, setLastSavedSystemPrompt] = useState<number | null>(null);
   const [lastSavedTask, setLastSavedTask] = useState<number | null>(null);
-  const [lastSavedIssues, setLastSavedIssues] = useState<number | null>(null); // Add this
+  const [lastSavedIssues, setLastSavedIssues] = useState<number | null>(null);
   const [lastSavedHeader, setLastSavedHeader] = useState<number | null>(null);
   const [maskedSubstrings, setMaskedSubstrings] = useState('');
   const [lastSavedMaskedSubstrings, setLastSavedMaskedSubstrings] = useState<number | null>(null);
 
-  // Load saved data on component mount
+  // Load saved data when rootFolder changes
   useEffect(() => {
     const loadSavedData = async () => {
+      // Ensure we have a valid folder path
+      const folderPath = rootFolder || '';
+
       try {
-        // Load system prompt
-        const savedSystemPrompt = await window.electronAPI.getSystemPrompt();
-        if (savedSystemPrompt) setSystemPrompt(savedSystemPrompt);
+        // Load state for the specific folder path
+        const savedSystemPrompt = await window.electronAPI.getSystemPrompt(folderPath);
+        const savedTask = await window.electronAPI.getTask(folderPath);
+        const savedIssues = await window.electronAPI.getIssues(folderPath);
+        const savedHeader = await window.electronAPI.getSelectedHeader(folderPath);
+        const savedMaskedSubstrings = await window.electronAPI.getMaskedSubstrings(folderPath);
 
-        // Load task
-        const savedTask = await window.electronAPI.getTask();
-        if (savedTask) setTask(savedTask);
+        setSystemPrompt(savedSystemPrompt);
+        setTask(savedTask);
+        setIssues(savedIssues);
+        setSelectedHeader(savedHeader || 'issues');
+        setMaskedSubstrings(savedMaskedSubstrings);
 
-        // Load issues - NEW
-        const savedIssues = await window.electronAPI.getIssues();
-        if (savedIssues) setIssues(savedIssues);
+        // Reset timestamps
+        setLastSavedSystemPrompt(null);
+        setLastSavedTask(null);
+        setLastSavedIssues(null);
+        setLastSavedHeader(null);
+        setLastSavedMaskedSubstrings(null);
 
-        // Load header selection
-        const savedHeader = await window.electronAPI.getSelectedHeader();
-        if (savedHeader) {
-          setSelectedHeader(savedHeader);
-        } else {
-          // Default to 'issues' if nothing saved
-          setSelectedHeader('issues');
-        }
-
-        const savedMaskedSubstrings = await window.electronAPI.getMaskedSubstrings();
-        if (savedMaskedSubstrings) setMaskedSubstrings(savedMaskedSubstrings);
       } catch (err) {
         console.error('Failed to load saved data:', err);
       }
     };
+
     loadSavedData();
-  }, []);
+  }, [rootFolder]); // Dependency on rootFolder
 
   const saveMaskedSubstrings = useCallback(async (value: string) => {
+    if (!rootFolder) return;
     try {
-      await window.electronAPI.saveMaskedSubstrings(value);
+      await window.electronAPI.saveMaskedSubstrings(rootFolder, value);
       setLastSavedMaskedSubstrings(Date.now());
     } catch (err) {
       console.error('Failed to save masked substrings:', err);
     }
-  }, []);
+  }, [rootFolder]);
 
   useEffect(() => {
-    if (maskedSubstrings === '') return;
+    if (maskedSubstrings === '' || !rootFolder) return;
     const timer = setTimeout(() => {
       saveMaskedSubstrings(maskedSubstrings);
     }, 800);
     return () => clearTimeout(timer);
-  }, [maskedSubstrings, saveMaskedSubstrings]);
+  }, [maskedSubstrings, saveMaskedSubstrings, rootFolder]);
 
   const saveSystemPrompt = useCallback(async (value: string) => {
+    if (!rootFolder) return;
     try {
-      await window.electronAPI.saveSystemPrompt(value);
+      await window.electronAPI.saveSystemPrompt(rootFolder, value);
       setLastSavedSystemPrompt(Date.now());
     } catch (err) {
       console.error('Failed to save system prompt:', err);
     }
-  }, []);
+  }, [rootFolder]);
 
   const saveTask = useCallback(async (value: string) => {
+    if (!rootFolder) return;
     try {
-      await window.electronAPI.saveTask(value);
+      await window.electronAPI.saveTask(rootFolder, value);
       setLastSavedTask(Date.now());
     } catch (err) {
       console.error('Failed to save task:', err);
     }
-  }, []);
+  }, [rootFolder]);
 
-  // NEW: Save issues function
   const saveIssues = useCallback(async (value: string) => {
+    if (!rootFolder) return;
     try {
-      await window.electronAPI.saveIssues(value);
+      await window.electronAPI.saveIssues(rootFolder, value);
       setLastSavedIssues(Date.now());
     } catch (err) {
       console.error('Failed to save issues:', err);
     }
-  }, []);
+  }, [rootFolder]);
 
   const saveHeader = useCallback(async (value: string) => {
+    if (!rootFolder) return;
     try {
-      await window.electronAPI.saveSelectedHeader(value);
+      await window.electronAPI.saveSelectedHeader(rootFolder, value);
       setLastSavedHeader(Date.now());
     } catch (err) {
       console.error('Failed to save header selection:', err);
     }
-  }, []);
+  }, [rootFolder]);
 
   // Auto-save system prompt (debounced)
   useEffect(() => {
-    if (systemPrompt === '') return;
+    if (systemPrompt === '' || !rootFolder) return;
     const timer = setTimeout(() => {
       saveSystemPrompt(systemPrompt);
     }, 800);
     return () => clearTimeout(timer);
-  }, [systemPrompt, saveSystemPrompt]);
+  }, [systemPrompt, saveSystemPrompt, rootFolder]);
 
   // Auto-save task (debounced)
   useEffect(() => {
-    if (task === '') return;
+    if (task === '' || !rootFolder) return;
     const timer = setTimeout(() => {
       saveTask(task);
     }, 800);
     return () => clearTimeout(timer);
-  }, [task, saveTask]);
+  }, [task, saveTask, rootFolder]);
 
-  // NEW: Auto-save issues (debounced)
+  // Auto-save issues (debounced)
   useEffect(() => {
-    if (issues === '') return;
+    if (issues === '' || !rootFolder) return;
     const timer = setTimeout(() => {
       saveIssues(issues);
     }, 800);
     return () => clearTimeout(timer);
-  }, [issues, saveIssues]);
+  }, [issues, saveIssues, rootFolder]);
 
   // Auto-save header selection (debounced)
   useEffect(() => {
-    if (!selectedHeader) return;
+    if (!selectedHeader || !rootFolder) return;
     const timer = setTimeout(() => {
       saveHeader(selectedHeader);
     }, 300);
     return () => clearTimeout(timer);
-  }, [selectedHeader, saveHeader]);
+  }, [selectedHeader, saveHeader, rootFolder]);
 
   // Load / reload referenced files content
   const loadFileContents = useCallback(async () => {
@@ -234,18 +239,16 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     loadFileContents();
   };
 
-  // NEW: Handle New Task button - clear Task textarea
+  // Handle New Task button - clear Task textarea
   const handleNewTask = () => {
     setTask('');
-    // Optionally trigger save immediately
-    saveTask('');
+    saveTask(''); // Save empty string
   };
 
-  // NEW: Handle Clear Issues button - clear Issues textarea
+  // Handle Clear Issues button - clear Issues textarea
   const handleClearIssues = () => {
     setIssues('');
-    // Optionally trigger save immediately
-    saveIssues('');
+    saveIssues(''); // Save empty string
   };
 
   // Handle prepend button click
@@ -364,6 +367,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               title="Custom substrings masked and presented as [SENSITIVE] in the redacted prompt"
               value={maskedSubstrings}
               onChange={(e) => setMaskedSubstrings(e.target.value)}
+              disabled={!rootFolder}
               style={{
                 width: '100%',
                 padding: '8px 12px',
@@ -428,7 +432,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               <button
                 className="toolbar-button"
                 onClick={() => saveSystemPrompt(systemPrompt)}
-                disabled={!systemPrompt.trim()}
+                disabled={!systemPrompt.trim() || !rootFolder}
                 style={{ fontSize: '12px', padding: '4px 10px' }}
               >
                 Save
@@ -441,6 +445,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               placeholder="Define the AI assistant's role, behavior, and constraints..."
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
+              disabled={!rootFolder}
               rows={5}
             />
             <div className="char-counter">{systemPrompt.length} characters</div>
@@ -463,13 +468,14 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   onClick={handleNewTask}
                   title="Clear task and start fresh"
                   style={{ fontSize: '12px', padding: '4px 10px', backgroundColor: '#2a2d2e' }}
+                  disabled={!rootFolder}
                 >
                   New Task
                 </button>
                 <button
                   className="toolbar-button"
                   onClick={() => saveTask(task)}
-                  disabled={!task.trim()}
+                  disabled={!task.trim() || !rootFolder}
                   style={{ fontSize: '12px', padding: '4px 10px' }}
                 >
                   Save
@@ -497,6 +503,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               placeholder="Describe the specific task or objective..."
               value={task}
               onChange={(e) => setTask(e.target.value)}
+              disabled={!rootFolder}
               rows={4}
             />
             {/* Appended text buttons - Second row */}
@@ -534,13 +541,14 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   onClick={handleClearIssues}
                   title="Clear issues textarea"
                   style={{ fontSize: '12px', padding: '4px 10px', backgroundColor: '#2a2d2e' }}
+                  disabled={!rootFolder}
                 >
                   Clear
                 </button>
                 <button
                   className="toolbar-button"
                   onClick={() => saveIssues(issues)}
-                  disabled={!issues.trim()}
+                  disabled={!issues.trim() || !rootFolder}
                   style={{ fontSize: '12px', padding: '4px 10px' }}
                 >
                   Save
@@ -560,6 +568,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                       value={option.value}
                       checked={selectedHeader === option.value}
                       onChange={(e) => setSelectedHeader(e.target.value)}
+                      disabled={!rootFolder}
                       style={{ margin: 0, cursor: 'pointer' }}
                     />
                     <span style={{ color: selectedHeader === option.value ? '#ccaa00' : '#ccc' }}>
@@ -576,6 +585,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               placeholder="List any known issues, feedback, logs, errors, or proposals..."
               value={issues}
               onChange={(e) => setIssues(e.target.value)}
+              disabled={!rootFolder}
               rows={2}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -646,7 +656,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         <div className="alert-message alert-info">
           <span>💡</span>
           <span>
-            <strong>Content sanitization applied:</strong> HTML entities decoded.
+            <strong>Content sanitization applied:</strong> HTML entities decoded. State saved per folder.
           </span>
         </div>
       </div>

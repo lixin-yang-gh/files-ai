@@ -13,20 +13,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getLastOpenedFolder: () => ipcRenderer.invoke('store:getLastOpenedFolder'),
   saveLastOpenedFolder: (path) => ipcRenderer.invoke('store:saveLastOpenedFolder', path),
 
-  getSystemPrompt: () => ipcRenderer.invoke('store:getSystemPrompt'),
-  saveSystemPrompt: (value) => ipcRenderer.invoke('store:saveSystemPrompt', value),
+  // Updated to accept folderPath
+  getSystemPrompt: (folderPath) => ipcRenderer.invoke('store:getSystemPrompt', folderPath),
+  saveSystemPrompt: (folderPath, value) => ipcRenderer.invoke('store:saveSystemPrompt', folderPath, value),
 
-  getTask: () => ipcRenderer.invoke('store:getTask'),
-  saveTask: (value) => ipcRenderer.invoke('store:saveTask', value),
+  getTask: (folderPath) => ipcRenderer.invoke('store:getTask', folderPath),
+  saveTask: (folderPath, value) => ipcRenderer.invoke('store:saveTask', folderPath, value),
 
-  getSelectedHeader: () => ipcRenderer.invoke('store:getSelectedHeader'),
-  saveSelectedHeader: (value) => ipcRenderer.invoke('store:saveSelectedHeader', value),
+  getSelectedHeader: (folderPath) => ipcRenderer.invoke('store:getSelectedHeader', folderPath),
+  saveSelectedHeader: (folderPath, value) => ipcRenderer.invoke('store:saveSelectedHeader', folderPath, value),
 
-  getIssues: () => ipcRenderer.invoke('store:getIssues'),
-  saveIssues: (value) => ipcRenderer.invoke('store:saveIssues', value),
+  getIssues: (folderPath) => ipcRenderer.invoke('store:getIssues', folderPath),
+  saveIssues: (folderPath, value) => ipcRenderer.invoke('store:saveIssues', folderPath, value),
 
-  getMaskedSubstrings: () => ipcRenderer.invoke('store:getMaskedSubstrings'),
-  saveMaskedSubstrings: (value) => ipcRenderer.invoke('store:saveMaskedSubstrings', value),
+  getMaskedSubstrings: (folderPath) => ipcRenderer.invoke('store:getMaskedSubstrings', folderPath),
+  saveMaskedSubstrings: (folderPath, value) => ipcRenderer.invoke('store:saveMaskedSubstrings', folderPath, value),
 
   redactText: (text) => ipcRenderer.invoke('redact-text', text),
 
