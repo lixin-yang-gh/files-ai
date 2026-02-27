@@ -65,6 +65,9 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [defaultSystemPrompt, setDefaultSystemPrompt] = useState('');
   const [lastSavedDefaultSystemPrompt, setLastSavedDefaultSystemPrompt] = useState<number | null>(null);
 
+  const [showConfirmSave, setShowConfirmSave] = useState(false);
+  const [confirmTimer, setConfirmTimer] = useState<NodeJS.Timeout | null>(null);
+
   // Load saved data when rootFolder changes
   useEffect(() => {
     const handleFolderChange = async () => {
@@ -166,18 +169,49 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     }
   }, [defaultSystemPrompt, saveSystemPrompt]);
 
-  // Save as Default button handler
-  const handleSaveAsDefaultPrompt = useCallback(async () => {
+  // Save as Default button handler - shows confirm button
+  const handleSaveAsDefaultPrompt = useCallback(() => {
+    if (!systemPrompt.trim() || !isDifferentFromDefault) return;
+
+    // Hide the regular Save as Default button, show confirm button
+    setShowConfirmSave(true);
+
+    // Set a 10-second timer to revert back
+    const timer = setTimeout(() => {
+      setShowConfirmSave(false);
+    }, 10000);
+
+    setConfirmTimer(timer);
+  }, [systemPrompt, isDifferentFromDefault]);
+
+  // Confirm Save as Default button handler
+  const handleConfirmSaveAsDefault = useCallback(async () => {
     if (!systemPrompt.trim()) return;
+
+    // Clear the timer
+    if (confirmTimer) {
+      clearTimeout(confirmTimer);
+      setConfirmTimer(null);
+    }
 
     try {
       await window.electronAPI.saveDefaultSystemPrompt(systemPrompt);
       setDefaultSystemPrompt(systemPrompt);
       setLastSavedDefaultSystemPrompt(Date.now());
+      setShowConfirmSave(false); // Hide confirm button after successful save
     } catch (err) {
       console.error('Failed to save default system prompt:', err);
     }
-  }, [systemPrompt]);
+  }, [systemPrompt, confirmTimer]);
+
+  // Cancel confirmation (when timer expires or component unmounts)
+  useEffect(() => {
+    return () => {
+      if (confirmTimer) {
+        clearTimeout(confirmTimer);
+      }
+    };
+  }, [confirmTimer]);
 
   // Compute if current prompt is different from default
   const isDifferentFromDefault = useMemo(() => {
@@ -496,7 +530,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                 System Prompt <span className="required-marker">*</span>
               </label>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
                 <button
                   className="toolbar-button"
                   onClick={() => saveSystemPrompt(systemPrompt)}
@@ -509,18 +543,37 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   className="toolbar-button"
                   onClick={handleLoadDefaultPrompt}
                   disabled={!defaultSystemPrompt || !rootFolder || systemPrompt === defaultSystemPrompt}
-                  title={defaultSystemPrompt ? "Load default system prompt" : "No default prompt saved"}
+                  title={
+                    !defaultSystemPrompt
+                      ? "No default prompt saved"
+                      : systemPrompt === defaultSystemPrompt
+                        ? "Current prompt is already the default"
+                        : "Load default system prompt"
+                  }
                 >
                   Load Default
                 </button>
-                {/* Save as Default button */}
+
+                {/* Regular Save as Default button - hidden when confirm is shown */}
                 <button
                   className={`toolbar-button ${isDifferentFromDefault && !(!isDifferentFromDefault || !rootFolder) ? 'special' : ''}`}
                   onClick={handleSaveAsDefaultPrompt}
                   disabled={!isDifferentFromDefault || !rootFolder}
                   title="Save current prompt as default"
+                  style={{ display: showConfirmSave ? 'none' : 'inline-flex' }}
                 >
                   Save as Default
+                </button>
+
+                {/* Confirm Save as Default button - shown for 10 seconds after clicking Save as Default */}
+                <button
+                  className="toolbar-button confirm"
+                  onClick={handleConfirmSaveAsDefault}
+                  disabled={!isDifferentFromDefault || !rootFolder}
+                  title="Click to confirm saving as default (expires in 10 seconds)"
+                  style={{ display: showConfirmSave ? 'inline-flex' : 'none' }}
+                >
+                  ⚠️ Confirm Save
                 </button>
               </div>
 
