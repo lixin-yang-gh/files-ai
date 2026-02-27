@@ -1,6 +1,21 @@
 // src/shared/electron.d.ts
 export { };
 
+// Session types shared between main and renderer
+export interface SessionInfo {
+  id: number; // 0-99
+  label?: string;
+  totalActive: number;
+  maxSessions: number;
+}
+
+export interface SessionMetadata {
+  id: number;
+  createdAt: number;
+  lastActive: number;
+  displayLabel?: string;
+}
+
 declare global {
   interface Window {
     electronAPI: {
@@ -22,12 +37,13 @@ declare global {
 
       getFileStats: (path: string) => Promise<{
         size: number;
-        modified: Date;
         isDirectory: boolean;
         isFile: boolean;
+        mtime: number;
+        birthtime: number;
       }>;
 
-      writeFile: (path: string, content: string) => Promise<void>;
+      writeFile: (path: string, content: string) => Promise<{ success: true }>;
 
       // Store operations
       getLastOpenedFolder: () => Promise<string | undefined>;
@@ -38,11 +54,23 @@ declare global {
       saveSystemPrompt: (value: string) => Promise<{ success: true }>;
       getTask: () => Promise<string>;
       saveTask: (value: string) => Promise<{ success: true }>;
+      getIssues: () => Promise<string>;
+      saveIssues: (value: string) => Promise<{ success: true }>;
       getSelectedHeader: () => Promise<string>;
       saveSelectedHeader: (value: string) => Promise<{ success: true }>;
-      redactText: (text: string) => Promise<string>;
       getMaskedSubstrings: () => Promise<string>;
       saveMaskedSubstrings: (value: string) => Promise<{ success: true }>;
+
+      // Redaction
+      redactText: (text: string) => Promise<string>;
+
+      // Session management
+      updateFileCount: (count: number) => Promise<{ success: true }>;
+      setSessionLabel: (label: string) => Promise<{ success: true }>;
+      getSessionInfo: () => Promise<SessionInfo | null>;
+      getSessionId: () => Promise<number | null>;
+      getAllSessions: () => Promise<SessionMetadata[]>;
+      getActiveSessionsCount: () => Promise<number>;
 
       // Events
       on: (channel: string, callback: (...args: any[]) => void) => void;

@@ -1,42 +1,45 @@
-import { app, BrowserWindow, ipcMain, dialog, screen } from 'electron';
+// src/main/main.ts - REPLACE entire file
+import { app, BrowserWindow, ipcMain, dialog, screen, WebContents } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import Store from 'electron-store';
-// import { redactum } from "redactum";
 import { redactContent } from './redaction-config';
+import { SessionManager, StoreSchema } from './session-manager';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Define the store schema
-interface StoreSchema {
-  lastOpenedFolder?: string;
-  systemPrompt?: string;
-  task?: string;
-  issues?: string;
-  selectedHeader?: string;
-  windowBounds?: { x: number; y: number; width: number; height: number };
-  maskedSubstrings?: string;
-}
+// Session manager instance
+const sessionManager = new SessionManager();
 
-// Initialize electron-store
-const store = new Store<StoreSchema>({
-  defaults: {
-    lastOpenedFolder: undefined,
-    systemPrompt: "",
-    task: '',
-    issues: '',
-    selectedHeader: 'issues',
-    windowBounds: { width: 1200, height: 800, x: 100, y: 100 },
-    maskedSubstrings: ''
-  },
-  name: 'app-settings'
-});
+// Map to track which webContents belongs to which session
+const webContentsToSession = new Map<number, number>();
 
 let mainWindow: BrowserWindow | null = null;
 
 async function createWindow() {
-  const bounds = getValidatedWindowBounds();
+  // Check if session pool is full
+  if (sessionManager.getCurrentSessionId() === null) {
+    await dialog.showMessageBox({
+      type: 'warning',
+      title: 'Session Limit Reached',
+      message: 'Maximum session limit reached (100 parallel sessions).',
+      detail: 'Please close another instance of the application and try again.\n\nThis window will close automatically.',
+      buttons: ['OK']
+    });
+    app.quit();
+    return;
+  }
+
+  const sessionStore = sessionManager.getCurrentStore();
+  const sessionId = sessionManager.getCurrentSessionId();
+
+  if (!sessionStore || sessionId === null) {
+    throw new Error('Failed to initialize session store');
+  }
+
+  // Validate and get window bounds
+  const bounds = getValidatedWindowBounds(sessionStore);
 
   mainWindow = new BrowserWindow({
     width: bounds.width,
@@ -51,7 +54,17 @@ async function createWindow() {
     titleBarStyle: 'hiddenInset',
   });
 
-  console.log(`env=${process.env.NODE_ENV}`);
+  // Map this window's webContents to its session
+  webContentsToSession.set(mainWindow.webContents.id, sessionId);
+
+  // Update window title with session ID
+  const sessionInfo = sessionManager.getCurrentSessionInfo();
+  const sessionDisplay = sessionInfo?.label
+    ? `${sessionInfo.label} (Session ${sessionId})`
+    : `Session ${sessionId}`;
+  mainWindow.setTitle(`files-ai — ${sessionDisplay}`);
+
+  console.log(`env=${process.env.NODE_ENV}, sessionId=${sessionId}`);
 
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
@@ -61,15 +74,17 @@ async function createWindow() {
   } else {
     const indexPath = path.join(__dirname, '../renderer/index.html');
     console.log(`Trying to load: ${indexPath}`);
-    if (await fs.access(indexPath).then(() => true).catch(() => false)) {
+    try {
+      await fs.access(indexPath);
       mainWindow.loadFile(indexPath);
-    } else {
+    } catch (e) {
       console.error('index.html not found at:', indexPath);
       console.log('Current __dirname:', __dirname);
       try {
-        console.log('Files in dist/renderer:', await fs.readdir(path.join(__dirname, '../renderer')));
-      } catch (e) {
-        console.error('Cannot read dist/renderer:', e);
+        const files = await fs.readdir(path.join(__dirname, '../renderer'));
+        console.log('Files in dist/renderer:', files);
+      } catch (err) {
+        console.error('Cannot read dist/renderer:', err);
       }
       mainWindow.loadURL(
         'data:text/html,<h1 style="color:red">index.html not found!<br>Run: npm run build<br>Check console for details</h1>'
@@ -77,41 +92,52 @@ async function createWindow() {
     }
   }
 
+  // Save window bounds on change
   const saveBounds = () => {
     if (mainWindow && !mainWindow.isMinimized()) {
-      store.set('windowBounds', mainWindow.getBounds());
+      sessionStore.set('windowBounds', mainWindow.getBounds());
     }
   };
   mainWindow.on('resize', saveBounds);
   mainWindow.on('move', saveBounds);
   mainWindow.on('close', saveBounds);
 
+  // Clean up mapping when window closes
+  mainWindow.webContents.on('destroyed', () => {
+    webContentsToSession.delete(mainWindow!.webContents.id);
+  });
+
   console.log(`__dirname=${__dirname}`);
 }
 
-const getValidatedWindowBounds = () => {
-  const saved = store.get('windowBounds') as { x?: number; y?: number; width?: number; height?: number } || {};
-  let { width = 1200, height = 800, x = 100, y = 100 } = saved;
+function getValidatedWindowBounds(store: Store<StoreSchema>): { width: number; height: number; x: number; y: number } {
+  const saved = store.get('windowBounds') as { x?: number; y?: number; width?: number; height?: number } | undefined;
+  let { width = 1200, height = 800, x = 100, y = 100 } = saved || {};
 
   const display = screen.getPrimaryDisplay();
   const { width: screenW, height: screenH } = display.workAreaSize;
 
-  // If bigger than screen > resize to fill screen and move to top-left
   if (width > screenW || height > screenH) {
     width = screenW;
     height = screenH;
     x = 0;
     y = 0;
   } else {
-    // Ensure fully visible (clamp position)
     x = Math.max(0, Math.min(x, screenW - width));
     y = Math.max(0, Math.min(y, screenH - height));
   }
 
   return { width, height, x, y };
-};
+}
 
-// IPC Handlers
+// Helper to get store for a specific webContents
+function getStoreForWebContents(webContents: WebContents): Store<StoreSchema> | null {
+  const sessionId = webContentsToSession.get(webContents.id);
+  if (sessionId === undefined) return null;
+  return sessionManager.getSessionStore(sessionId);
+}
+
+// IPC Handlers - all now use session-aware stores
 ipcMain.handle('dialog:openDirectory', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],
@@ -167,77 +193,141 @@ ipcMain.handle('write-file', async (_, { path: filePath, content }) => {
   }
 });
 
-// Store-related IPC handlers - ADD THESE
-ipcMain.handle('store:getLastOpenedFolder', () => {
-  return store.get('lastOpenedFolder');
+// Store-related IPC handlers - session-aware
+ipcMain.handle('store:getLastOpenedFolder', (event) => {
+  const store = getStoreForWebContents(event.sender);
+  return store?.get('lastOpenedFolder');
 });
 
-ipcMain.handle('store:saveLastOpenedFolder', (_, folderPath: string) => {
-  store.set('lastOpenedFolder', folderPath);
+ipcMain.handle('store:saveLastOpenedFolder', (event, folderPath: string) => {
+  const store = getStoreForWebContents(event.sender);
+  if (store) {
+    store.set('lastOpenedFolder', folderPath);
+  }
   return { success: true };
 });
 
-ipcMain.handle('store:getSystemPrompt', () => {
-  return store.get('systemPrompt') || '';
+ipcMain.handle('store:getSystemPrompt', (event) => {
+  const store = getStoreForWebContents(event.sender);
+  return store?.get('systemPrompt') || '';
 });
 
-ipcMain.handle('store:saveSystemPrompt', (_, value: string) => {
-  store.set('systemPrompt', value);
+ipcMain.handle('store:saveSystemPrompt', (event, value: string) => {
+  const store = getStoreForWebContents(event.sender);
+  if (store) {
+    store.set('systemPrompt', value);
+  }
   return { success: true };
 });
 
-ipcMain.handle('store:getTask', () => {
-  return store.get('task') || '';
+ipcMain.handle('store:getTask', (event) => {
+  const store = getStoreForWebContents(event.sender);
+  return store?.get('task') || '';
 });
 
-ipcMain.handle('store:saveTask', (_, value: string) => {
-  store.set('task', value);
+ipcMain.handle('store:saveTask', (event, value: string) => {
+  const store = getStoreForWebContents(event.sender);
+  if (store) {
+    store.set('task', value);
+  }
   return { success: true };
 });
 
-ipcMain.handle('store:getSelectedHeader', () => {
-  return store.get('selectedHeader') || 'issues';
+ipcMain.handle('store:getIssues', (event) => {
+  const store = getStoreForWebContents(event.sender);
+  return store?.get('issues') || '';
 });
 
-ipcMain.handle('store:saveSelectedHeader', (_, value: string) => {
-  store.set('selectedHeader', value);
+ipcMain.handle('store:saveIssues', (event, value: string) => {
+  const store = getStoreForWebContents(event.sender);
+  if (store) {
+    store.set('issues', value);
+  }
   return { success: true };
 });
 
-ipcMain.handle('store:getIssues', () => {
-  return store.get('issues') || '';
+ipcMain.handle('store:getSelectedHeader', (event) => {
+  const store = getStoreForWebContents(event.sender);
+  return store?.get('selectedHeader') || '';
 });
 
-ipcMain.handle('store:saveIssues', (_, value: string) => {
-  store.set('issues', value);
+ipcMain.handle('store:saveSelectedHeader', (event, value: string) => {
+  const store = getStoreForWebContents(event.sender);
+  if (store) {
+    store.set('selectedHeader', value);
+  }
+  return { success: true };
+});
+
+ipcMain.handle('store:getMaskedSubstrings', (event) => {
+  const store = getStoreForWebContents(event.sender);
+  return store?.get('maskedSubstrings') || '';
+});
+
+ipcMain.handle('store:saveMaskedSubstrings', (event, value: string) => {
+  const store = getStoreForWebContents(event.sender);
+  if (store) {
+    store.set('maskedSubstrings', value);
+  }
   return { success: true };
 });
 
 ipcMain.handle('redact-text', async (_, text: string) => {
   try {
-    // const clean = redactum(text).redactedText;
-    // return clean;
     return redactContent(text);
   } catch (error) {
     console.error('Redaction failed:', error);
-    return text; // Fallback to original text on error
+    return text;
   }
 });
 
-ipcMain.handle('store:getMaskedSubstrings', () => {
-  return store.get('maskedSubstrings') || '';
-});
-
-ipcMain.handle('store:saveMaskedSubstrings', (_, value: string) => {
-  store.set('maskedSubstrings', value);
+// IPC handler to update file count for session
+ipcMain.handle('session:updateFileCount', (event, count: number) => {
+  sessionManager.updateFileCount(count);
   return { success: true };
 });
 
+// IPC handler to set session label (for easier identification)
+ipcMain.handle('session:setLabel', (event, label: string) => {
+  sessionManager.setSessionLabel(label);
+  return { success: true };
+});
+
+// IPC handler to get current session info
+ipcMain.handle('session:getInfo', () => {
+  return sessionManager.getCurrentSessionInfo();
+});
+
+// IPC handler to get session ID for specific webContents
+ipcMain.handle('session:getId', (event) => {
+  const sessionId = webContentsToSession.get(event.sender.id);
+  return sessionId !== undefined ? sessionId : null;
+});
+
+// IPC handler to get all sessions (for future session management UI)
+ipcMain.handle('session:getAll', () => {
+  return sessionManager.getAllSessions();
+});
+
+// IPC handler to get active sessions count
+ipcMain.handle('session:getActiveCount', () => {
+  return sessionManager.getActiveSessionsCount();
+});
+
 // App lifecycle
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  // Session cleanup happens in SessionManager constructor
+  await createWindow();
+});
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+});
+
+// Handle before-quit to mark last active session
+app.on('before-quit', () => {
+  sessionManager.markAsLastActive();
+  sessionManager.stopHeartbeat();
 });

@@ -91,6 +91,14 @@ const FileTree: React.FC<FileTreeProps> = ({
     }
   }, [selectedFilePaths, onSelectedPathsChange]);
 
+  useEffect(() => {
+    // Update session with current file count
+    if (window.electronAPI && typeof window.electronAPI.updateFileCount === 'function') {
+      window.electronAPI.updateFileCount(selectedFilePaths.size)
+        .catch((err: Error) => console.error('Failed to update file count:', err));
+    }
+  }, [selectedFilePaths.size]);
+
   // Load directory initially
   useEffect(() => {
     if (rootPath && isInitialized) {
@@ -111,6 +119,13 @@ const FileTree: React.FC<FileTreeProps> = ({
       setTree(sortedItems);
       if (onFolderOpen) {
         onFolderOpen(dirPath);
+      }
+      // Set session label based on folder name for easier identification
+      const folderName = dirPath.split(/[\\/]/).pop() || dirPath;
+      if (window.electronAPI.setSessionLabel) {
+        window.electronAPI.setSessionLabel(folderName).catch(err =>
+          console.warn('Failed to set session label:', err)
+        );
       }
     } catch (error) {
       console.error('Error loading directory:', error);
