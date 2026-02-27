@@ -160,6 +160,11 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     }
   }, [rootFolder]);
 
+  // Compute if current prompt is different from default
+  const isDifferentFromDefault = useMemo(() => {
+    return systemPrompt !== defaultSystemPrompt;
+  }, [systemPrompt, defaultSystemPrompt]);
+
   // Load Default button handler
   const handleLoadDefaultPrompt = useCallback(() => {
     if (defaultSystemPrompt) {
@@ -179,7 +184,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     // Set a 10-second timer to revert back
     const timer = setTimeout(() => {
       setShowConfirmSave(false);
-    }, 10000);
+    }, 5000);
 
     setConfirmTimer(timer);
   }, [systemPrompt, isDifferentFromDefault]);
@@ -213,11 +218,15 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     };
   }, [confirmTimer]);
 
-  // Compute if current prompt is different from default
-  const isDifferentFromDefault = useMemo(() => {
-    return systemPrompt !== defaultSystemPrompt;
-  }, [systemPrompt, defaultSystemPrompt]);
-
+  // Cancel confirmation (when timer expires or component unmounts)
+  useEffect(() => {
+    return () => {
+      if (confirmTimer) {
+        clearTimeout(confirmTimer);
+      }
+    };
+  }, [confirmTimer]);
+  
   useEffect(() => {
     if (maskedSubstrings === '' || !rootFolder) return;
     const timer = setTimeout(() => {
@@ -565,12 +574,12 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   Save as Default
                 </button>
 
-                {/* Confirm Save as Default button - shown for 10 seconds after clicking Save as Default */}
+                {/* Confirm Save as Default button - shown for 5 seconds after clicking Save as Default */}
                 <button
                   className="toolbar-button confirm"
                   onClick={handleConfirmSaveAsDefault}
                   disabled={!isDifferentFromDefault || !rootFolder}
-                  title="Click to confirm saving as default (expires in 10 seconds)"
+                  title="Click to confirm saving as default (expires in 5 seconds)"
                   style={{ display: showConfirmSave ? 'inline-flex' : 'none' }}
                 >
                   ⚠️ Confirm Save
