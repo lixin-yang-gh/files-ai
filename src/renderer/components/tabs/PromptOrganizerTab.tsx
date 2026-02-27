@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   getErrorMessage,
   getRelativePath,
@@ -62,6 +62,8 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [lastSavedHeader, setLastSavedHeader] = useState<number | null>(null);
   const [maskedSubstrings, setMaskedSubstrings] = useState('');
   const [lastSavedMaskedSubstrings, setLastSavedMaskedSubstrings] = useState<number | null>(null);
+  const [defaultSystemPrompt, setDefaultSystemPrompt] = useState('');
+  const [lastSavedDefaultSystemPrompt, setLastSavedDefaultSystemPrompt] = useState<number | null>(null);
 
   // Load saved data when rootFolder changes
   useEffect(() => {
@@ -121,8 +123,19 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rootFolder]);
 
-  // ... existing callbacks (saveMaskedSubstrings, saveSystemPrompt, etc.) ...
-  // (Keep the rest of the component exactly the same as the previous update)
+  // Load default system prompt on mount
+  useEffect(() => {
+    const loadDefaultPrompt = async () => {
+      try {
+        const defaultPrompt = await window.electronAPI.getDefaultSystemPrompt();
+        setDefaultSystemPrompt(defaultPrompt || '');
+      } catch (err) {
+        console.error('Failed to load default system prompt:', err);
+      }
+    };
+
+    loadDefaultPrompt();
+  }, []);
 
   const saveMaskedSubstrings = useCallback(async (value: string) => {
     if (!rootFolder) return;
@@ -134,14 +147,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     }
   }, [rootFolder]);
 
-  useEffect(() => {
-    if (maskedSubstrings === '' || !rootFolder) return;
-    const timer = setTimeout(() => {
-      saveMaskedSubstrings(maskedSubstrings);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [maskedSubstrings, saveMaskedSubstrings, rootFolder]);
-
   const saveSystemPrompt = useCallback(async (value: string) => {
     if (!rootFolder) return;
     try {
@@ -151,6 +156,41 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       console.error('Failed to save system prompt:', err);
     }
   }, [rootFolder]);
+
+  // Load Default button handler
+  const handleLoadDefaultPrompt = useCallback(() => {
+    if (defaultSystemPrompt) {
+      setSystemPrompt(defaultSystemPrompt);
+      // Optionally trigger auto-save after load
+      setTimeout(() => saveSystemPrompt(defaultSystemPrompt), 100);
+    }
+  }, [defaultSystemPrompt, saveSystemPrompt]);
+
+  // Save as Default button handler
+  const handleSaveAsDefaultPrompt = useCallback(async () => {
+    if (!systemPrompt.trim()) return;
+
+    try {
+      await window.electronAPI.saveDefaultSystemPrompt(systemPrompt);
+      setDefaultSystemPrompt(systemPrompt);
+      setLastSavedDefaultSystemPrompt(Date.now());
+    } catch (err) {
+      console.error('Failed to save default system prompt:', err);
+    }
+  }, [systemPrompt]);
+
+  // Compute if current prompt is different from default
+  const isDifferentFromDefault = useMemo(() => {
+    return systemPrompt !== defaultSystemPrompt;
+  }, [systemPrompt, defaultSystemPrompt]);
+
+  useEffect(() => {
+    if (maskedSubstrings === '' || !rootFolder) return;
+    const timer = setTimeout(() => {
+      saveMaskedSubstrings(maskedSubstrings);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [maskedSubstrings, saveMaskedSubstrings, rootFolder]);
 
   const saveTask = useCallback(async (value: string) => {
     if (!rootFolder) return;
@@ -455,31 +495,59 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               <label htmlFor="system-prompt">
                 System Prompt <span className="required-marker">*</span>
               </label>
-              <button
-                className="toolbar-button"
-                onClick={() => saveSystemPrompt(systemPrompt)}
-                disabled={!systemPrompt.trim() || !rootFolder}
-                style={{ fontSize: '12px', padding: '4px 10px' }}
-              >
-                Save
-              </button>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className="toolbar-button"
+                  onClick={() => saveSystemPrompt(systemPrompt)}
+                  disabled={!systemPrompt.trim() || !rootFolder}
+                >
+                  Save
+                </button>
+                {/* Load Default button */}
+                <button
+                  className="toolbar-button"
+                  onClick={handleLoadDefaultPrompt}
+                  disabled={!defaultSystemPrompt || !rootFolder || systemPrompt === defaultSystemPrompt}
+                  title={defaultSystemPrompt ? "Load default system prompt" : "No default prompt saved"}
+                >
+                  Load Default
+                </button>
+                {/* Save as Default button */}
+                <button
+                  className={`toolbar-button ${isDifferentFromDefault && !(!isDifferentFromDefault || !rootFolder) ? 'special' : ''}`}
+                  onClick={handleSaveAsDefaultPrompt}
+                  disabled={!isDifferentFromDefault || !rootFolder}
+                  title="Save current prompt as default"
+                >
+                  Save as Default
+                </button>
+              </div>
+
             </div>
             <textarea
               id="system-prompt"
               className="prompt-textarea"
-              style={{ minHeight: '40px' }}
+              style={{ minHeight: '20px' }}
               placeholder="Define the AI assistant's role, behavior, and constraints..."
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
               disabled={!rootFolder}
-              rows={5}
+              rows={2}
             />
             <div className="char-counter">{systemPrompt.length} characters</div>
-            {lastSavedSystemPrompt && (
-              <div style={{ fontSize: '11px', color: '#4ec9b0', marginTop: 2 }}>
-                Saved {new Date(lastSavedSystemPrompt).toLocaleTimeString()}
-              </div>
-            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+              {lastSavedSystemPrompt && (
+                <div style={{ fontSize: '11px', color: '#4ec9b0' }}>
+                  Saved {new Date(lastSavedSystemPrompt).toLocaleTimeString()}
+                </div>
+              )}
+              {defaultSystemPrompt && (
+                <div style={{ fontSize: '11px', color: '#888' }}>
+                  Default: {defaultSystemPrompt.length > 30 ? defaultSystemPrompt.substring(0, 30) + '...' : defaultSystemPrompt}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="prompt-input-group">
@@ -493,7 +561,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   className="toolbar-button"
                   onClick={handleNewTask}
                   title="Clear task and start fresh"
-                  style={{ fontSize: '12px', padding: '4px 10px', backgroundColor: '#2a2d2e' }}
                   disabled={!rootFolder}
                 >
                   New Task
@@ -502,7 +569,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   className="toolbar-button"
                   onClick={() => saveTask(task)}
                   disabled={!task.trim() || !rootFolder}
-                  style={{ fontSize: '12px', padding: '4px 10px' }}
                 >
                   Save
                 </button>
@@ -517,12 +583,12 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   className="toolbar-button"
                   onClick={() => handlePrepend(button.value)}
                   title={`Prepend: ${button.value}`}
-                  style={{ fontSize: '12px', padding: '4px 10px' }}
                 >
                   ⬇️ {button.key}
                 </button>
               ))}
             </div>
+
             <textarea
               id="task"
               className="prompt-textarea"
@@ -540,7 +606,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   className="toolbar-button"
                   onClick={() => handleAppend(button.value)}
                   title={`Append: ${button.value}`}
-                  style={{ fontSize: '12px', padding: '4px 10px' }}
                 >
                   ⬆️ {button.key}
                 </button>
@@ -566,7 +631,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   className="toolbar-button"
                   onClick={handleClearIssues}
                   title="Clear issues textarea"
-                  style={{ fontSize: '12px', padding: '4px 10px', backgroundColor: '#2a2d2e' }}
                   disabled={!rootFolder}
                 >
                   Clear
@@ -575,10 +639,10 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   className="toolbar-button"
                   onClick={() => saveIssues(issues)}
                   disabled={!issues.trim() || !rootFolder}
-                  style={{ fontSize: '12px', padding: '4px 10px' }}
                 >
                   Save
                 </button>
+
               </div>
             </div>
 

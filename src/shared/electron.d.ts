@@ -58,6 +58,10 @@ declare global {
       getMaskedSubstrings: (folderPath: string) => Promise<string>;
       saveMaskedSubstrings: (folderPath: string, value: string) => Promise<{ success: true }>;
 
+      // Default System Prompt operations (global)
+      getDefaultSystemPrompt: () => Promise<string>;
+      saveDefaultSystemPrompt: (value: string) => Promise<{ success: true }>;
+
       redactText: (text: string) => Promise<string>;
 
       // Events

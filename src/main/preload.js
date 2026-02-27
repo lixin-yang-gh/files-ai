@@ -33,6 +33,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMaskedSubstrings: (folderPath) => ipcRenderer.invoke('store:getMaskedSubstrings', folderPath),
   saveMaskedSubstrings: (folderPath, value) => ipcRenderer.invoke('store:saveMaskedSubstrings', folderPath, value),
 
+  // Default System Prompt operations (global)
+  getDefaultSystemPrompt: () => ipcRenderer.invoke('store:getDefaultSystemPrompt'),
+  saveDefaultSystemPrompt: (value) => ipcRenderer.invoke('store:saveDefaultSystemPrompt', value),
+
   redactText: (text) => ipcRenderer.invoke('redact-text', text),
 
   on: (channel, callback) => {

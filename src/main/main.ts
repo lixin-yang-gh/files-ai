@@ -23,6 +23,8 @@ interface StoreSchema {
   windowBounds?: { x: number; y: number; width: number; height: number };
   // Map of absolute folder paths to their specific state
   folderStates?: Record<string, FolderSpecificState>;
+  // Global default system prompt
+  defaultSystemPrompt?: string;
 }
 
 // Initialize electron-store
@@ -260,6 +262,16 @@ ipcMain.handle('store:saveFolderState', (_, folderPath: string, state: FolderSpe
   // Overwrite or create the entry for this folder
   states[folderPath] = state;
   store.set('folderStates', states);
+  return { success: true };
+});
+
+// Default System Prompt handlers (global, not per-folder)
+ipcMain.handle('store:getDefaultSystemPrompt', () => {
+  return store.get('defaultSystemPrompt') || '';
+});
+
+ipcMain.handle('store:saveDefaultSystemPrompt', (_, value: string) => {
+  store.set('defaultSystemPrompt', value);
   return { success: true };
 });
 
