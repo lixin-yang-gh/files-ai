@@ -5,7 +5,8 @@ export { };
 export interface SessionInfo {
   id: number; // 0-99
   label?: string;
-  totalActive: number;
+  isDefault: boolean;
+  activeCount: number;
   maxSessions: number;
 }
 

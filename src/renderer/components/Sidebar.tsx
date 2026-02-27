@@ -4,7 +4,8 @@ import FileTree from './FileTree';
 interface SessionInfo {
   id: number;
   label?: string;
-  totalActive: number;
+  isDefault: boolean;
+  activeCount: number;
   maxSessions: number;
 }
 
@@ -24,7 +25,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
 
   useEffect(() => {
-    // Load session info on mount
     const loadSessionInfo = async () => {
       try {
         if (window.electronAPI?.getSessionInfo) {
@@ -38,11 +38,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     loadSessionInfo();
   }, []);
 
-  // Update session label when path changes
   useEffect(() => {
     if (currentPath && sessionInfo) {
-      // Session label is already being set by FileTree
-      // Just refresh the session info
       const refreshSessionInfo = async () => {
         try {
           if (window.electronAPI?.getSessionInfo) {
@@ -53,7 +50,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           console.error('Failed to refresh session info:', err);
         }
       };
-      // Debounce the refresh
       const timer = setTimeout(refreshSessionInfo, 500);
       return () => clearTimeout(timer);
     }
@@ -68,68 +64,24 @@ const Sidebar: React.FC<SidebarProps> = ({
         onSelectedPathsChange={onSelectedPathsChange}
       />
       <div className="sidebar-footer">
-        {/* Session ID Display - Prominent */}
-        <div className="session-id-display" style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '6px 8px',
-          background: '#2a4a5a',
-          borderRadius: '4px',
-          marginBottom: '6px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{
-              fontSize: '11px',
-              color: '#888',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
-              Session
-            </span>
-            <span style={{
-              fontSize: '18px',
-              fontWeight: 'bold',
-              fontFamily: 'Consolas, Monaco, monospace',
-              color: '#4ec9b0',
-              background: '#1e3a4a',
-              padding: '2px 10px',
-              borderRadius: '3px',
-              minWidth: '40px',
-              textAlign: 'center'
-            }}>
+        {/* Session ID Display */}
+        <div className="session-id-display">
+          <div className="session-id-left">
+            <span className="session-label-text">Session</span>
+            <span className="session-id-number">
               {sessionInfo?.id !== undefined ? sessionInfo.id.toString().padStart(2, '0') : '--'}
             </span>
+            {sessionInfo?.isDefault && (
+              <span className="default-badge">DEFAULT</span>
+            )}
           </div>
-          <span style={{
-            fontSize: '10px',
-            color: '#6a8a9a'
-          }}>
-            {sessionInfo?.totalActive ?? 0}/{sessionInfo?.maxSessions ?? 100}
-          </span>
         </div>
 
         {/* Session Label if set */}
         {sessionInfo?.label && (
-          <div className="session-label" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            marginBottom: '4px',
-            padding: '4px 8px',
-            background: '#2a3a4a',
-            borderRadius: '3px'
-          }}>
+          <div className="session-label">
             <span style={{ fontSize: '10px', color: '#888' }}>Label:</span>
-            <small style={{
-              fontFamily: 'Consolas, monospace',
-              color: '#9cdcfe',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}>
-              {sessionInfo.label}
-            </small>
+            <small>{sessionInfo.label}</small>
           </div>
         )}
 

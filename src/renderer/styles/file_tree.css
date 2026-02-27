@@ -17,10 +17,8 @@
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
-    /* Grow to fill sidebar, allow shrink if needed */
     min-height: 0;
     overflow: hidden;
-    /* Prevent overflow from children spilling out */
 }
 
 /* ─────────────────────────────────────────────
@@ -31,7 +29,6 @@
     border-bottom: 1px solid #1e1e1e;
     background: #252526;
     flex-shrink: 0;
-    /* Prevent header from shrinking */
     height: 80px;
     -webkit-app-region: drag;
 }
@@ -52,7 +49,6 @@
 .tree-header a,
 .tree-header [role="button"],
 .tree-header .draggable-exclude {
-    /* ← add this class to anything clickable */
     -webkit-app-region: no-drag !important;
 }
 
@@ -82,7 +78,7 @@
 }
 
 /* ─────────────────────────────────────────────
-   Tree Content (main scrollable area) - IMPROVED
+   Tree Content
 ───────────────────────────────────────────── */
 .tree-content {
     flex: 1 1 auto;
@@ -95,7 +91,6 @@
     background-color: #333333;
 }
 
-/* Custom scrollbar */
 .tree-content::-webkit-scrollbar {
     width: 10px;
 }
@@ -114,13 +109,12 @@
 }
 
 /* ─────────────────────────────────────────────
-   Tree Items (files & folders) - IMPROVED
+   Tree Items
 ───────────────────────────────────────────── */
 .tree-item {
     display: flex;
     align-items: center;
     padding: 2px 15px;
-    /* Reduced padding for more items */
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
@@ -128,7 +122,6 @@
     user-select: none;
     transition: background 0.15s ease;
     min-height: 24px;
-    /* Consistent height */
 }
 
 .tree-item:hover {
@@ -146,10 +139,8 @@
     width: 14px;
     height: 14px;
     accent-color: #0e639c;
-    /* Modern browser support */
 }
 
-/* For better cross-browser checkbox */
 .tree-checkbox {
     position: relative;
     cursor: pointer;
@@ -187,7 +178,6 @@
     align-items: center;
     flex: 1;
     min-height: 24px;
-    /* Match tree-item height */
     border-radius: 3px;
     transition: background-color 0.2s;
 }
@@ -206,18 +196,15 @@
     margin-right: 6px;
     font-size: 14px;
     min-width: 16px;
-    /* Prevent icon shift */
     text-align: center;
 }
 
 .folder-icon {
     color: #e2c08d;
-    /* Warm color for folders */
 }
 
 .file-icon {
     color: #cccccc;
-    /* Neutral for files */
 }
 
 .item-name {
@@ -228,7 +215,7 @@
 }
 
 /* ─────────────────────────────────────────────
-   Nested children - IMPROVED
+   Nested children
 ───────────────────────────────────────────── */
 .tree-children {
     overflow: hidden;
@@ -245,7 +232,6 @@
     font-size: 11px;
     color: #888;
     flex-shrink: 0;
-    /* Prevent shrinking */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -262,7 +248,7 @@
 }
 
 /* ─────────────────────────────────────────────
-   Footer - Updated for Session ID display
+   Footer - Session ID display
 ───────────────────────────────────────────── */
 .sidebar-footer {
     padding: 10px;
@@ -271,42 +257,49 @@
     font-size: 11px;
     color: #888;
     flex-shrink: 0;
-    /* Prevent shrinking */
 }
 
-/* Session ID prominent display */
+/* Session ID display */
 .session-id-display {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 8px;
-    background: #2a4a5a;
+    padding: 8px;
+    background: #1e3a4a;
     border-radius: 4px;
     margin-bottom: 6px;
+    font-size: 9px;
 }
 
-.session-id-display .session-label-text {
-    font-size: 11px;
+.session-id-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.session-label-text {
     color: #888;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.session-id-display .session-id-number {
-    font-size: 18px;
-    font-weight: bold;
+.session-id-number {
     font-family: 'Consolas', 'Monaco', monospace;
-    color: #4ec9b0;
-    background: #1e3a4a;
-    padding: 2px 10px;
-    border-radius: 3px;
-    min-width: 40px;
+    background: #0d2833;
+    padding: 4px 12px;
+    border-radius: 4px;
+    min-width: 44px;
     text-align: center;
 }
 
-.session-id-display .pool-stats {
-    font-size: 10px;
-    color: #6a8a9a;
+.default-badge {
+    font-size: 9px;
+    font-weight: 600;
+    color: #888;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* Session label row */
@@ -345,7 +338,6 @@
     content: '';
     position: absolute;
     left: 15px;
-    /* Adjust this offset as needed to align better with icons/checkboxes (e.g., 15-30px) */
     top: 0;
     bottom: 0;
     width: 1px;
@@ -379,7 +371,6 @@
     vertical-align: middle;
 }
 
-
 /* Refresh button styling */
 .tree-header-actions .button.refreshing {
     opacity: 0.7;
@@ -406,7 +397,7 @@
     font-weight: bold;
 }
 
-/*  Copy animation for tree items */
+/* Copy animation for tree items */
 .tree-item-content.copied {
     animation: copyPulse 0.4s ease-in-out;
 }
@@ -425,7 +416,7 @@
     }
 }
 
-/* Copied indicator – visible word next to file/folder name */
+/* Copied indicator */
 .copied-indicator {
     margin-left: 10px;
     font-size: 11px;
@@ -457,7 +448,6 @@
         transform: scale(0.92);
     }
 }
-
 
 /* Resizer styles */
 .resizer {
