@@ -26,10 +26,10 @@ const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
 ];
 
 const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
-  { key: 'Files', value: '\n---\nPlease print out all the updated files in full. Each file block should have a header to indicate the file path and a summary of all the updates applied to the file.' },
-  { key: 'Files - conditional', value: '\n---\nIf changes are required, please print out all the updated files in full. Each file block should have a header to indicate the file path and a summary of all the updates applied to the file.' },
-  { key: 'Update blocks', value: '\n---\nPlease print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block with obvious visual separation between them. Please indicate an update operation is a whole file operation if the block to be added, deleted or replaced is actually the whole file. Please include a short explanation or reason to each operation. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' },
-  { key: 'Update blocks - conditional', value: '\n---\nIf changes are required, please print out the added/updated/deleted text or code in individual update blocks, each with a header indicating the operation type (add, replace, delete) and the block\'s location in the file. For a replacement operation, print both the existing block and the corresponding replacement block with obvious visual separation between them. Please indicate an update operation is a whole file operation if the block to be added, deleted or replaced is actually the whole file. Please include a short explanation or reason to each operation. Do not put any symbols on individual lines as I want to copy and paste the updated text or code directly.' }
+  { key: 'Files', value: '\n---\nProvide the full content for any new or replaced files together with their relative paths from the project_root. For deletions, simply provide the relative file path from the project_root. Include a brief reason for each file change.' },
+  { key: 'Files - conditional', value: '\n---\nIf changes are required, provide the full content for any new or replaced files together with their relative paths from the project_root. For deletions, simply provide the relative file path from the project_root. Include a brief reason for each file change.' },
+  { key: 'Update blocks', value: '\n---\nProvide the added, updated or deleted text/code in separate update blocks. Each block must start with a header stating the operation type (add, replace, delete) and the exact location in the file, followed by one line briefly explaining the reason for the change. For partial replacements, show both the existing block and the replacement block with clear visual separation. If the operation targets the entire file, state this explicitly and do not include the existing file content. Do not place any symbols on individual lines alone, so the updated text or code can be copied and pasted directly.' },
+  { key: 'Update blocks - conditional', value: '\n---\nIf changes are required, provide the added, updated or deleted text/code in separate update blocks. Each block must start with a header stating the operation type (add, replace, delete) and the exact location in the file, followed by one line briefly explaining the reason for the change. For partial replacements, show both the existing block and the replacement block with clear visual separation. If the operation targets the entire file, state this explicitly and do not include the existing file content. Do not place any symbols on individual lines alone, so the updated text or code can be copied and pasted directly.' }
 ];
 
 const HEADER_OPTIONS: Array<{ display: string; value: string }> = [
@@ -37,8 +37,8 @@ const HEADER_OPTIONS: Array<{ display: string; value: string }> = [
   { display: 'Feedback', value: 'feedback' },
   { display: 'Analysis', value: 'analysis' },
   { display: 'Context', value: 'context' },
-  { display: 'Proposal', value: 'proposal' },
-  { display: '3rd Party Proposal', value: 'third_party_proposal' },
+  { display: 'Proposals', value: 'proposals' },
+  { display: '3rd Party Proposals', value: 'third_party_proposals' },
   { display: 'Info', value: 'information' },
   { display: 'Logs', value: 'logs' },
   { display: 'Errors', value: 'errors' },
@@ -420,7 +420,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
           ? await window.electronAPI.redactText(referencedFilesContent)
           : referencedFilesContent;
         filesContent = applyCustomMasking(filesContent, customSubstrings);
-        promptParts.push(`## Referenced Files\n\n${filesContent}`);
+        promptParts.push(`## Referenced Files\n\n**Please nominate probably missing or unselected but still anticipated files if there are any**\n\n${filesContent}`);
       }
 
       let fullPrompt = promptParts.join('\n\n---\n\n');
