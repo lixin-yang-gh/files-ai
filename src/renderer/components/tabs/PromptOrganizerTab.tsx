@@ -510,7 +510,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               disabled={isLoadingFiles || selectedFilePaths.length === 0}
               title="Reload all referenced file contents"
             >
-              Reload All Files
+              Reload All<br />Files
             </button>
           </div>
 

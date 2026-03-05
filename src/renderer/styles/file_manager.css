@@ -1005,6 +1005,7 @@ pre::-webkit-scrollbar-thumb:hover,
     position: relative;
     overflow: hidden;
     word-wrap: nowrap;
+    width: 120px;
     margin-right: 10px;
 }
 
