@@ -267,6 +267,7 @@
     position: relative;
     overflow: hidden;
     word-wrap: nowrap;
+    width: 100px;
 }
 
 .generate-prompt-button:hover:not(:disabled) {
@@ -1006,7 +1007,7 @@ pre::-webkit-scrollbar-thumb:hover,
     overflow: hidden;
     word-wrap: nowrap;
     width: 120px;
-    margin-right: 10px;
+    margin-right: 12px;
 }
 
 .reload-files-button:hover:not(:disabled) {

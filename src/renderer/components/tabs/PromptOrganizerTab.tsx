@@ -521,15 +521,16 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               onClick={() => handleGeneratePrompt(false)}
               disabled={!canGeneratePrompt || generationStatus === 'generating'}
             >
-              Generate Prompt
+              Get<br />Prompt
             </button>
             <button
               className={`generate-prompt-button ${!canGeneratePrompt ? 'disabled' : ''} ${generationStatus === 'success' ? 'success' : ''
                 }`}
+              style={{ width: '150px' }}
               onClick={() => handleGeneratePrompt(true)}
               disabled={!canGeneratePrompt || generationStatus === 'generating'}
             >
-              Generate Prompt with Redaction
+              Get Redacted<br />Prompt
             </button>
           </div>
         </div>
