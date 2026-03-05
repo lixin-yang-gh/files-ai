@@ -985,3 +985,39 @@ pre::-webkit-scrollbar-thumb:hover,
     color: #666;
     font-style: italic;
 }
+
+.generate-prompt-button.success {
+    background: #2e7d32;
+    color: white;
+}
+
+/* Reload All Files button - orange variant */
+.reload-files-button {
+    padding: 12px 20px;
+    background: #e07000;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    word-wrap: nowrap;
+    margin-right: 10px;
+}
+
+.reload-files-button:hover:not(:disabled) {
+    background: #f08010;
+}
+
+.reload-files-button:active:not(:disabled) {
+    background: #c06000;
+}
+
+.reload-files-button:disabled {
+    background: #2a2d2e;
+    color: #666;
+    cursor: not-allowed;
+}

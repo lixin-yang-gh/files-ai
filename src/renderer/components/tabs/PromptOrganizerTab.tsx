@@ -17,6 +17,7 @@ interface PromptOrganizerTabProps {
 const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
   { key: 'Feasibility', value: 'Please explore feasibility.' },
   { key: 'Analysis', value: 'Please provide analysis.' },
+  { key: 'Review', value: 'Please review ' },
   { key: 'Solution', value: 'Please propose the best solution.' },
   { key: 'Enhancements', value: 'Please propose enhancement.' },
   { key: 'Improvements', value: 'Please propose improvement.' },
@@ -27,7 +28,7 @@ const PREPEND_BUTTONS: Array<{ key: string; value: string }> = [
 ];
 
 const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
-  { key: 'File', value: '\n---\nProvide the full content of the updated file together with its relative path from the project_root. For deletions, simply provide the relative file path from the project_root. Include a brief reason for each file change.' },
+  { key: 'Current File', value: '\n---\nProvide the full content of the updated file together with its relative path from the project_root. For deletions, simply provide the relative file path from the project_root. Include a brief reason for each file change.' },
   { key: 'Files', value: '\n---\nProvide the full content for any new or replaced files together with their relative paths from the project_root. For deletions, simply provide the relative file path from the project_root. Include a brief reason for each file change.' },
   { key: 'Files - conditional', value: '\n---\nIf changes are required, provide the full content for any new or replaced files together with their relative paths from the project_root. For deletions, simply provide the relative file path from the project_root. Include a brief reason for each file change.' },
   { key: 'Update blocks', value: '\n---\nProvide the added, updated or deleted text/code in separate update blocks. Each block must start with a header stating the operation type (add, replace, delete) and the exact location in the file, followed by one line briefly explaining the reason for the change. For partial replacements, show both the existing block and the replacement block with clear visual separation. If the operation targets the entire file, state this explicitly and do not include the existing file content. Do not place any symbols on individual lines alone, so the updated text or code can be copied and pasted directly.' },
@@ -228,7 +229,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       }
     };
   }, [confirmTimer]);
-  
+
   useEffect(() => {
     if (maskedSubstrings === '' || !rootFolder) return;
     const timer = setTimeout(() => {
@@ -500,6 +501,17 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                 </div>
               )}
             </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button
+              className="reload-files-button"
+              onClick={handleReloadAll}
+              disabled={isLoadingFiles || selectedFilePaths.length === 0}
+              title="Reload all referenced file contents"
+            >
+              Reload All Files
+            </button>
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
