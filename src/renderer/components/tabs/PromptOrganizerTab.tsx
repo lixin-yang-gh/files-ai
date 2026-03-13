@@ -347,8 +347,9 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     loadFileContents();
   }, [loadFileContents]);
 
-  const handleReloadAll = () => {
-    loadFileContents();
+  const handleReloadAll = async () => {
+    await loadFileContents();          // reload fresh file contents
+    await handleGeneratePrompt(false);  // generate and copy prompt (like “Get Prompt”)
   };
 
   // Handle New Task button - clear Task textarea
@@ -777,7 +778,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
           <div className="referenced-files-header">
             <h4>Referenced Files ({selectedFilePaths.length})</h4>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="toolbar-button" onClick={handleReloadAll} title="Reload all file contents">
+              <button className="toolbar-button reload-files-button-sml" onClick={handleReloadAll} title="Reload all file contents">
                 ↻ Reload All
               </button>
               <button
