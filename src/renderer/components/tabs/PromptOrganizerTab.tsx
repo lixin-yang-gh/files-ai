@@ -396,38 +396,44 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     setGenerationStatus('generating');
 
     try {
-      const promptParts = [];
-
-      // Apply sanitization to all text inputs
+      // Sanitize all text inputs first
       const sanitizedSystemPrompt = sanitizeText(systemPrompt.trim());
       const sanitizedTask = sanitizeText(task.trim());
       const sanitizedIssues = issues.trim() ? sanitizeText(issues.trim()) : '';
+      // referencedFilesContent is already built from files; we treat it as is (no extra sanitization needed here)
+      const filesContent = referencedFilesContent;
 
       const customSubstrings = parseMaskedSubstrings(maskedSubstrings);
 
-      promptParts.push(`## System Prompt\n\n${sanitizedSystemPrompt}\n`);
-      promptParts.push(`## Task\n\n${sanitizedTask}\n`);
+      // --- Apply redaction only to System Prompt and Task when requested ---
+      let processedSystemPrompt = sanitizedSystemPrompt;
+      let processedTask = sanitizedTask;
+      // Issues and Referenced Files are never redacted (only custom‑masked)
+      let processedIssues = sanitizedIssues;
+      let processedFiles = filesContent;
+    
+      // Apply custom substring masking to all fields
+      processedSystemPrompt = applyCustomMasking(processedSystemPrompt, customSubstrings);
+      processedTask = applyCustomMasking(processedTask, customSubstrings);
+      processedIssues = applyCustomMasking(processedIssues, customSubstrings);
+      processedFiles = applyCustomMasking(processedFiles, customSubstrings);
 
-      // Handle Issues section with optional redaction
-      if (sanitizedIssues) {
+      // Build the prompt parts
+      const promptParts = [];
+
+      promptParts.push(`## System Prompt\n\n${processedSystemPrompt}\n`);
+      promptParts.push(`## Task\n\n${processedTask}\n`);
+
+      if (processedIssues) {
         const displayHeader = HEADER_OPTIONS.find(h => h.value === selectedHeader)?.display || 'Issues';
-        let issuesContent = applyRedaction
-          ? await window.electronAPI.redactText(sanitizedIssues)
-          : sanitizedIssues;
-        issuesContent = applyCustomMasking(issuesContent, customSubstrings)
-        promptParts.push(`## ${displayHeader}\n\n${issuesContent}\n`);
+        promptParts.push(`## ${displayHeader}\n\n${processedIssues}\n`);
       }
 
-      // Handle Referenced Files section with optional redaction
-      if (referencedFilesContent.trim()) {
-        let filesContent = applyRedaction
-          ? await window.electronAPI.redactText(referencedFilesContent)
-          : referencedFilesContent;
-        filesContent = applyCustomMasking(filesContent, customSubstrings);
-        promptParts.push(`## Referenced Files\n\n**Please nominate probably missing or unselected but still anticipated files if there are any**\n\n${filesContent}`);
+      if (processedFiles.trim()) {
+        promptParts.push(`## Referenced Files\n\n**Please nominate probably missing or unselected but still anticipated files if there are any**\n\n${processedFiles}`);
       }
 
-      let fullPrompt = promptParts.join('\n\n---\n\n');
+      const fullPrompt = promptParts.join('\n\n---\n\n');
 
       await navigator.clipboard.writeText(fullPrompt);
       setGenerationStatus('success');
