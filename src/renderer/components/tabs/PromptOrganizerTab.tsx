@@ -413,8 +413,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       let processedFiles = filesContent;
     
       // Apply custom substring masking to all fields
-      processedSystemPrompt = applyCustomMasking(processedSystemPrompt, customSubstrings);
-      processedTask = applyCustomMasking(processedTask, customSubstrings);
       processedIssues = applyCustomMasking(processedIssues, customSubstrings);
       processedFiles = applyCustomMasking(processedFiles, customSubstrings);
 
@@ -476,7 +474,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                 fontWeight: '500'
               }}
             >
-              Masked Substrings
+              Masked Substrings (each must be double quote enclosed)
             </label>
             <input
               id="masked-substrings"
