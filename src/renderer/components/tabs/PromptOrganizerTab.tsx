@@ -405,14 +405,12 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
 
       const customSubstrings = parseMaskedSubstrings(maskedSubstrings);
 
-      // --- Apply redaction only to System Prompt and Task when requested ---
+      // Apply custom substring masking to all fields
       let processedSystemPrompt = sanitizedSystemPrompt;
       let processedTask = sanitizedTask;
-      // Issues and Referenced Files are never redacted (only custom‑masked)
       let processedIssues = sanitizedIssues;
       let processedFiles = filesContent;
 
-      // Apply custom substring masking to all fields
       processedIssues = applyCustomMasking(processedIssues, customSubstrings);
       processedFiles = applyCustomMasking(processedFiles, customSubstrings);
 
@@ -431,7 +429,17 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         promptParts.push(`## Referenced Files\n\n**Please nominate probably missing or unselected but still anticipated files if there are any**\n\n${processedFiles}`);
       }
 
-      const fullPrompt = promptParts.join('\n\n---\n\n');
+      let fullPrompt = promptParts.join('\n\n---\n\n');
+
+      // Apply redaction if requested
+      if (applyRedaction) {
+        try {
+          fullPrompt = await window.electronAPI.redactText(fullPrompt);
+        } catch (redactError) {
+          console.error('Redaction failed, using unredacted prompt:', redactError);
+          // Continue with unredacted prompt if redaction fails
+        }
+      }
 
       await navigator.clipboard.writeText(fullPrompt);
       setGenerationStatus('success');
@@ -485,16 +493,6 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
               value={maskedSubstrings}
               onChange={(e) => setMaskedSubstrings(e.target.value)}
               disabled={!rootFolder}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                background: '#3c3c3c',
-                color: '#cccccc',
-                border: '1px solid #555',
-                borderRadius: '4px',
-                fontSize: '13px',
-                marginBottom: '5px'
-              }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="char-counter" style={{ fontSize: '11px', color: '#888' }}>

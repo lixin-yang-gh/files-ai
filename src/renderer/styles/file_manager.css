@@ -1029,3 +1029,41 @@ pre::-webkit-scrollbar-thumb:hover,
   color: white;
   /* keep original padding/width from .toolbar-button */
 }
+
+.masked-substrings-container {
+    padding: 0 20px;
+    width: 100%;
+}
+
+.masked-substrings-input {
+    width: 100%;
+    padding: 8px 12px;
+    background: #3c3c3c;
+    color: #3c3c3c;
+    border: 1px solid #555;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.masked-substrings-input:hover {
+    border-color: #666;
+}
+
+.masked-substrings-input:focus {
+    outline: none;
+    border-color: #0e639c;
+    box-shadow: 0 0 0 1px rgba(14, 99, 156, 0.3);
+    color: #666;
+}
+
+.masked-substrings-input::placeholder {
+    color: #666;
+    font-style: italic;
+}
+
+.masked-substrings-input:disabled {
+    background: #2a2a2a;
+    color: #666;
+    cursor: not-allowed;
+}
