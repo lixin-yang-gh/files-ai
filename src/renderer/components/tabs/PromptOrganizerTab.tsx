@@ -80,6 +80,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
   const [lastSavedHeader, setLastSavedHeader] = useState<number | null>(null);
   const [maskedSubstrings, setMaskedSubstrings] = useState('');
   const [lastSavedMaskedSubstrings, setLastSavedMaskedSubstrings] = useState<number | null>(null);
+  const [standaloneCopyStatus, setStandaloneCopyStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [defaultSystemPrompt, setDefaultSystemPrompt] = useState('');
   const [lastSavedDefaultSystemPrompt, setLastSavedDefaultSystemPrompt] = useState<number | null>(null);
 
@@ -379,6 +380,26 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
     saveIssues(''); // Save empty string
   };
 
+  // Handle Get Standalone Prompt from Task button
+  const handleGetStandalonePrompt = async () => {
+    const taskText = task.trim();
+    if (!taskText) return;
+
+    setStandaloneCopyStatus('idle');
+
+    try {
+      const substrings = parseMaskedSubstrings(maskedSubstrings);
+      const maskedTask = applyCustomMasking(taskText, substrings);
+      await navigator.clipboard.writeText(maskedTask);
+      setStandaloneCopyStatus('success');
+      setTimeout(() => setStandaloneCopyStatus('idle'), 2000);
+    } catch (err) {
+      console.error('Failed to copy standalone prompt:', err);
+      setStandaloneCopyStatus('error');
+      setTimeout(() => setStandaloneCopyStatus('idle'), 2000);
+    }
+  };
+
   // Handle prepend button click
   const handlePrepend = (textToPrepend: string) => {
     setTask(prevTask => {
@@ -651,7 +672,14 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                 Task <span className="required-marker">*</span>
               </label>
               <div style={{ display: 'flex', gap: '8px' }}>
-                {/* NEW: New Task button */}
+                <button
+                  className="toolbar-button"
+                  onClick={handleGetStandalonePrompt}
+                  title="Copy task with masked substrings to clipboard"
+                  disabled={!task.trim()}
+                >
+                  Get Standalone Prompt from Task
+                </button>
                 <button
                   className="toolbar-button"
                   onClick={handleNewTask}
@@ -708,6 +736,11 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
             </div>
 
             <div className="char-counter">{task.length} characters</div>
+            {standaloneCopyStatus !== 'idle' && (
+              <div className={`alert-message alert-${standaloneCopyStatus === 'success' ? 'success' : 'error'}`} style={{ marginTop: '8px' }}>
+                {standaloneCopyStatus === 'success' ? '✓ Standalone prompt copied to clipboard!' : 'Failed to copy standalone prompt'}
+              </div>
+            )}
             {lastSavedTask && (
               <div style={{ fontSize: '11px', color: '#4ec9b0', marginTop: 2 }}>
                 Saved {new Date(lastSavedTask).toLocaleTimeString()}
