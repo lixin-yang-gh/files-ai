@@ -22,9 +22,6 @@ const FileManager: React.FC<FileManagerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
 
-  const prevSelectedCountRef = useRef(selectedFilePaths.length);
-  const shouldAutoSwitchTabRef = useRef(true); // NEW: Control auto-switching
-
   useEffect(() => {
     if (filePath) {
       loadFile(filePath);
@@ -32,23 +29,6 @@ const FileManager: React.FC<FileManagerProps> = ({
       setContent(null);
     }
   }, [filePath]);
-
-  useEffect(() => {
-    const prevCount = prevSelectedCountRef.current;
-    const currentCount = selectedFilePaths.length;
-
-    // Only auto-switch when going from 0 to >0 selected files AND we're allowing auto-switch
-    if (shouldAutoSwitchTabRef.current && prevCount === 0 && currentCount > 0) {
-      setActiveTab(1); // Switch to Prompt Organizer when files are first selected
-      onTabChange?.(1);
-    } else if (currentCount === 0 && activeTab === 1) {
-      // If no files selected and we're on Prompt Organizer, switch to Overview
-      setActiveTab(0);
-      onTabChange?.(0);
-    }
-
-    prevSelectedCountRef.current = currentCount;
-  }, [selectedFilePaths, activeTab, onTabChange]);
 
   useEffect(() => {
     // Check if selected files still exist
@@ -84,8 +64,6 @@ const FileManager: React.FC<FileManagerProps> = ({
   const handleTabChange = (tabIndex: number) => {
     setActiveTab(tabIndex);
     onTabChange?.(tabIndex);
-    // When user manually changes tab, disable auto-switching
-    shouldAutoSwitchTabRef.current = false;
   };
 
   const loadFile = async (path: string) => {

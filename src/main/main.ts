@@ -8,27 +8,31 @@ import { redactContent } from './redaction-config';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Define the store schema
-interface StoreSchema {
-  lastOpenedFolder?: string;
+// Define the state structure for a specific folder
+interface FolderSpecificState {
   systemPrompt?: string;
   task?: string;
   issues?: string;
   selectedHeader?: string;
-  windowBounds?: { x: number; y: number; width: number; height: number };
   maskedSubstrings?: string;
+}
+
+// Define the store schema
+interface StoreSchema {
+  lastOpenedFolder?: string;
+  windowBounds?: { x: number; y: number; width: number; height: number };
+  // Map of absolute folder paths to their specific state
+  folderStates?: Record<string, FolderSpecificState>;
+  // Global default system prompt
+  defaultSystemPrompt?: string;
 }
 
 // Initialize electron-store
 const store = new Store<StoreSchema>({
   defaults: {
     lastOpenedFolder: undefined,
-    systemPrompt: "",
-    task: '',
-    issues: '',
-    selectedHeader: 'issues',
     windowBounds: { width: 1200, height: 800, x: 100, y: 100 },
-    maskedSubstrings: ''
+    folderStates: {}
   },
   name: 'app-settings'
 });
@@ -167,7 +171,7 @@ ipcMain.handle('write-file', async (_, { path: filePath, content }) => {
   }
 });
 
-// Store-related IPC handlers - ADD THESE
+// Store-related IPC handlers
 ipcMain.handle('store:getLastOpenedFolder', () => {
   return store.get('lastOpenedFolder');
 });
@@ -177,39 +181,40 @@ ipcMain.handle('store:saveLastOpenedFolder', (_, folderPath: string) => {
   return { success: true };
 });
 
-ipcMain.handle('store:getSystemPrompt', () => {
-  return store.get('systemPrompt') || '';
+// Updated IPC handlers for folder-specific state
+ipcMain.handle('store:getSystemPrompt', (_, folderPath: string) => {
+  return getFolderState(folderPath).systemPrompt || '';
 });
 
-ipcMain.handle('store:saveSystemPrompt', (_, value: string) => {
-  store.set('systemPrompt', value);
+ipcMain.handle('store:saveSystemPrompt', (_, folderPath: string, value: string) => {
+  saveFolderState(folderPath, { systemPrompt: value });
   return { success: true };
 });
 
-ipcMain.handle('store:getTask', () => {
-  return store.get('task') || '';
+ipcMain.handle('store:getTask', (_, folderPath: string) => {
+  return getFolderState(folderPath).task || '';
 });
 
-ipcMain.handle('store:saveTask', (_, value: string) => {
-  store.set('task', value);
+ipcMain.handle('store:saveTask', (_, folderPath: string, value: string) => {
+  saveFolderState(folderPath, { task: value });
   return { success: true };
 });
 
-ipcMain.handle('store:getSelectedHeader', () => {
-  return store.get('selectedHeader') || 'issues';
+ipcMain.handle('store:getSelectedHeader', (_, folderPath: string) => {
+  return getFolderState(folderPath).selectedHeader || 'issues';
 });
 
-ipcMain.handle('store:saveSelectedHeader', (_, value: string) => {
-  store.set('selectedHeader', value);
+ipcMain.handle('store:saveSelectedHeader', (_, folderPath: string, value: string) => {
+  saveFolderState(folderPath, { selectedHeader: value });
   return { success: true };
 });
 
-ipcMain.handle('store:getIssues', () => {
-  return store.get('issues') || '';
+ipcMain.handle('store:getIssues', (_, folderPath: string) => {
+  return getFolderState(folderPath).issues || '';
 });
 
-ipcMain.handle('store:saveIssues', (_, value: string) => {
-  store.set('issues', value);
+ipcMain.handle('store:saveIssues', (_, folderPath: string, value: string) => {
+  saveFolderState(folderPath, { issues: value });
   return { success: true };
 });
 
@@ -224,12 +229,49 @@ ipcMain.handle('redact-text', async (_, text: string) => {
   }
 });
 
-ipcMain.handle('store:getMaskedSubstrings', () => {
-  return store.get('maskedSubstrings') || '';
+ipcMain.handle('store:getMaskedSubstrings', (_, folderPath: string) => {
+  return getFolderState(folderPath).maskedSubstrings || '';
 });
 
-ipcMain.handle('store:saveMaskedSubstrings', (_, value: string) => {
-  store.set('maskedSubstrings', value);
+ipcMain.handle('store:saveMaskedSubstrings', (_, folderPath: string, value: string) => {
+  saveFolderState(folderPath, { maskedSubstrings: value });
+  return { success: true };
+});
+
+// Helper to get folder state
+const getFolderState = (folderPath: string): FolderSpecificState => {
+  const states = store.get('folderStates') || {};
+  return states[folderPath] || {};
+};
+
+// Helper to save folder state
+const saveFolderState = (folderPath: string, newState: Partial<FolderSpecificState>) => {
+  const states = store.get('folderStates') || {};
+  states[folderPath] = { ...states[folderPath], ...newState };
+  store.set('folderStates', states);
+};
+
+// Bulk operations for efficient folder switching
+ipcMain.handle('store:getFolderState', (_, folderPath: string): FolderSpecificState | undefined => {
+  const states = store.get('folderStates') || {};
+  return states[folderPath]; // Returns undefined if key doesn't exist
+});
+
+ipcMain.handle('store:saveFolderState', (_, folderPath: string, state: FolderSpecificState) => {
+  const states = store.get('folderStates') || {};
+  // Overwrite or create the entry for this folder
+  states[folderPath] = state;
+  store.set('folderStates', states);
+  return { success: true };
+});
+
+// Default System Prompt handlers (global, not per-folder)
+ipcMain.handle('store:getDefaultSystemPrompt', () => {
+  return store.get('defaultSystemPrompt') || '';
+});
+
+ipcMain.handle('store:saveDefaultSystemPrompt', (_, value: string) => {
+  store.set('defaultSystemPrompt', value);
   return { success: true };
 });
 

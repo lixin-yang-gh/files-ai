@@ -13,20 +13,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getLastOpenedFolder: () => ipcRenderer.invoke('store:getLastOpenedFolder'),
   saveLastOpenedFolder: (path) => ipcRenderer.invoke('store:saveLastOpenedFolder', path),
 
-  getSystemPrompt: () => ipcRenderer.invoke('store:getSystemPrompt'),
-  saveSystemPrompt: (value) => ipcRenderer.invoke('store:saveSystemPrompt', value),
+  // Bulk folder state operations
+  getFolderState: (folderPath) => ipcRenderer.invoke('store:getFolderState', folderPath),
+  saveFolderState: (folderPath, state) => ipcRenderer.invoke('store:saveFolderState', folderPath, state),
 
-  getTask: () => ipcRenderer.invoke('store:getTask'),
-  saveTask: (value) => ipcRenderer.invoke('store:saveTask', value),
+  // Individual operations (for granular auto-saving)
+  getSystemPrompt: (folderPath) => ipcRenderer.invoke('store:getSystemPrompt', folderPath),
+  saveSystemPrompt: (folderPath, value) => ipcRenderer.invoke('store:saveSystemPrompt', folderPath, value),
 
-  getSelectedHeader: () => ipcRenderer.invoke('store:getSelectedHeader'),
-  saveSelectedHeader: (value) => ipcRenderer.invoke('store:saveSelectedHeader', value),
+  getTask: (folderPath) => ipcRenderer.invoke('store:getTask', folderPath),
+  saveTask: (folderPath, value) => ipcRenderer.invoke('store:saveTask', folderPath, value),
 
-  getIssues: () => ipcRenderer.invoke('store:getIssues'),
-  saveIssues: (value) => ipcRenderer.invoke('store:saveIssues', value),
+  getSelectedHeader: (folderPath) => ipcRenderer.invoke('store:getSelectedHeader', folderPath),
+  saveSelectedHeader: (folderPath, value) => ipcRenderer.invoke('store:saveSelectedHeader', folderPath, value),
 
-  getMaskedSubstrings: () => ipcRenderer.invoke('store:getMaskedSubstrings'),
-  saveMaskedSubstrings: (value) => ipcRenderer.invoke('store:saveMaskedSubstrings', value),
+  getIssues: (folderPath) => ipcRenderer.invoke('store:getIssues', folderPath),
+  saveIssues: (folderPath, value) => ipcRenderer.invoke('store:saveIssues', folderPath, value),
+
+  getMaskedSubstrings: (folderPath) => ipcRenderer.invoke('store:getMaskedSubstrings', folderPath),
+  saveMaskedSubstrings: (folderPath, value) => ipcRenderer.invoke('store:saveMaskedSubstrings', folderPath, value),
+
+  // Default System Prompt operations (global)
+  getDefaultSystemPrompt: () => ipcRenderer.invoke('store:getDefaultSystemPrompt'),
+  saveDefaultSystemPrompt: (value) => ipcRenderer.invoke('store:saveDefaultSystemPrompt', value),
 
   redactText: (text) => ipcRenderer.invoke('redact-text', text),
 
