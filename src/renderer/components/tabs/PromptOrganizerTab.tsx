@@ -52,12 +52,12 @@ const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
 
 const HEADER_OPTIONS: Array<{ display: string; value: string }> = [
   { display: 'Issues', value: 'issues' },
+  { display: 'Info', value: 'info' },
   { display: 'Feedback', value: 'feedback' },
   { display: 'Analysis', value: 'analysis' },
   { display: 'Context', value: 'context' },
   { display: 'Proposals', value: 'proposals' },
-  { display: '3rd Party Proposals', value: 'third_party_proposals' },
-  { display: 'Info', value: 'information' },
+  { display: 'Third Party Proposals', value: 'third_party_proposals' },
   { display: 'Logs', value: 'logs' },
   { display: 'Errors', value: 'errors' },
 ];
@@ -453,16 +453,17 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       // Build the prompt parts
       const promptParts = [];
 
-      promptParts.push(`## System Prompt\n\n${processedSystemPrompt}\n`);
-      promptParts.push(`## Task\n\n${processedTask}\n`);
+      promptParts.push(`<system_prompt content="System Prompt">\n${processedSystemPrompt}\n</system_prompt>`);
+      promptParts.push(`<task content="Task">\n${processedTask}\n</task>`);
 
       if (processedIssues) {
         const displayHeader = HEADER_OPTIONS.find(h => h.value === selectedHeader)?.display || 'Issues';
-        promptParts.push(`## ${displayHeader}\n\n${processedIssues}\n`);
+        const xmlTag = selectedHeader || 'issues';
+        promptParts.push(`<${xmlTag} content="${displayHeader}">\n${processedIssues}\n</${xmlTag}>`);
       }
 
       if (processedFiles.trim()) {
-        promptParts.push(`## Referenced Files\n\n**Please nominate probably missing or unselected but still anticipated files if there are any**\n\n${processedFiles}`);
+        promptParts.push(`<referenced_files content="Referenced Files">\n**Please nominate probably missing or unselected but still anticipated files if there are any**\n\n${processedFiles}\n</referenced_files>`);
       }
 
       let fullPrompt = promptParts.join('\n\n---\n\n');
