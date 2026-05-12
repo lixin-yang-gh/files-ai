@@ -52,14 +52,15 @@ const APPEND_BUTTONS: Array<{ key: string; value: string }> = [
 
 const HEADER_OPTIONS: Array<{ display: string; value: string }> = [
   { display: 'Issues', value: 'issues' },
-  { display: 'Info', value: 'info' },
+  { display: 'Errors', value: 'errors' },
+  { display: 'Output', value: 'output' },
+  { display: 'Logs', value: 'logs' },
   { display: 'Feedback', value: 'feedback' },
-  { display: 'Analysis', value: 'analysis' },
-  { display: 'Context', value: 'context' },
   { display: 'Proposals', value: 'proposals' },
   { display: 'Third Party Proposals', value: 'third_party_proposals' },
-  { display: 'Logs', value: 'logs' },
-  { display: 'Errors', value: 'errors' },
+  { display: 'Analysis', value: 'analysis' },
+  { display: 'Context', value: 'context' },
+  { display: 'Info', value: 'info' },
 ];
 
 const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
@@ -466,7 +467,9 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
         promptParts.push(`<referenced_files content="Referenced Files">\n**Please nominate probably missing or unselected but still anticipated files if there are any**\n\n${processedFiles}\n</referenced_files>`);
       }
 
-      let fullPrompt = promptParts.join('\n\n---\n\n');
+      const systemPromptPart = promptParts[0];
+      const userPromptContent = promptParts.slice(1).join('\n\n---\n\n');
+      let fullPrompt = `${systemPromptPart}\n\n---\n\n<user_prompt content="User Prompt">\n${userPromptContent}\n</user_prompt>`;
 
       // Apply redaction if requested
       if (applyRedaction) {
