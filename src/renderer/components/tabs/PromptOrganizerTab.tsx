@@ -469,7 +469,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
 
       const systemPromptPart = promptParts[0];
       const userPromptContent = promptParts.slice(1).join('\n\n---\n\n');
-      let fullPrompt = `${systemPromptPart}\n\n---\n\n<user_prompt content="User Prompt">\n${userPromptContent}\n</user_prompt>`;
+      let fullPrompt = `${systemPromptPart}\n<user_prompt content="User Prompt">\n${userPromptContent}\n</user_prompt>`;
 
       // Apply redaction if requested
       if (applyRedaction) {
