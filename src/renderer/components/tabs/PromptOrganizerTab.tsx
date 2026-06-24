@@ -683,7 +683,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
                   title="Copy task with masked substrings to clipboard"
                   disabled={!task.trim()}
                 >
-                  Get Standalone Prompt from Task
+                  Standalone Prompt
                 </button>
                 <button
                   className="toolbar-button"
