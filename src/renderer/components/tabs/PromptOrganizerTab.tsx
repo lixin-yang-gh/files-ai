@@ -453,9 +453,10 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
 
       // Build the prompt parts
       const promptParts = [];
+      const missingFilesNomination='---\n**Please nominate missing or unselected but still anticipated files if there are any**\n';
 
       promptParts.push(`<system_prompt content="System Prompt">\n${processedSystemPrompt}\n</system_prompt>`);
-      promptParts.push(`<task content="Task">\n${processedTask}\n</task>`);
+      promptParts.push(`<task content="Task">\n${processedTask}\n${missingFilesNomination}</task>`);
 
       if (processedIssues) {
         const displayHeader = HEADER_OPTIONS.find(h => h.value === selectedHeader)?.display || 'Issues';
@@ -464,7 +465,7 @@ const PromptOrganizerTab: React.FC<PromptOrganizerTabProps> = ({
       }
 
       if (processedFiles.trim()) {
-        promptParts.push(`<referenced_files content="Referenced Files">\n**Please nominate probably missing or unselected but still anticipated files if there are any**\n\n${processedFiles}\n</referenced_files>`);
+        promptParts.push(`<referenced_files content="Referenced Files">\n${processedFiles}\n</referenced_files>`);
       }
 
       const systemPromptPart = promptParts[0];
